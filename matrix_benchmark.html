@@ -509,7 +509,7 @@
                 sensibility: 1, // => The smaller this value, the more precise you've to point
                 trackDecimals: 1,
                 trackFormatter: function(obj) { 
-                  return obj.series.label + ':' + benchmarks[Number(obj.x)] +  ', ' + obj.y 
+                  return obj.series.label + ':' + benchmarks[Number(obj.x)] +  ', ' + obj.y + 'ms'
                 }
               },
               crosshair:{ mode: 'xy' }
