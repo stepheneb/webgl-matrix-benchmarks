@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <title>Matrix Benchmark</title>
+    
+    <!-- Common Utilities -->
+    <script type="text/javascript" src="js/glMatrix.js"></script>
+    <script type="text/javascript" src="js/CanvasMatrix.js"></script>
+    <script type="text/javascript" src="js/EWGL_math.js"></script>
+    <script type="text/javascript" src="js/mjs.js"></script>
+    
+    <!-- Graphing Utilities -->
+    <script type="text/javascript" src="flotr/lib/prototype.js"></script>
+    <script type="text/javascript" src="flotr/lib/canvas2image.js"></script>
+    <script type="text/javascript" src="flotr/lib/canvastext.js"></script>
+    <script type="text/javascript" src="flotr/flotr.js"></script>
+    
+    <!-- Benchmarking utilities -->
+    <script type="text/javascript">
+    
+      testData = {};
+      
+      function log(html) {
+        document.getElementById('logDiv').innerHTML += html + '<br/><br/>'
+      }
+      
+      function logTitle(title) {
+        document.getElementById('logDiv').innerHTML += 
+        '=============================================<br/>' +
+        '<b>' + title + '</b><br/>' +
+        '=============================================' + '<br/><br/>'
+      }
+      
+      function test(library, f, dataLogger) {
+        // Repeats each benchmark multiple times to smooth out anomalies
+        // Also tracks min and max times
+        
+        if(!f) {
+          log('<i>' + library + ': Unsupported</i>');
+          dataLogger[library] = { avg: null, min: null, max: null };
+          return;
+        }
+        
+        var runCount = 10;
+        var internalRunCount = 20000;
+        var totalTime = 0;
+        var minTime = 0;
+        var maxTime = 0;
+        
+        for(var i = 0; i < runCount; ++i) {
+          var time = f(internalRunCount);
+          if(i == 0) {
+            minTime = time;
+            maxTime = time;
+          } else {
+            if(minTime > time) { minTime = time; }
+            if(maxTime < time) { maxTime = time; }
+          }
+          totalTime += time;
+        }
+        
+        var avg = totalTime / runCount;
+        
+        log('<i>' + library + '</i> - Avg: <b>' + avg + 'ms</b>, Min: ' + minTime + 'ms, Max: ' + maxTime + 'ms');
+        
+        dataLogger[library] = { avg: avg, min: minTime, max: maxTime };
+        
+      }
+      
+      function testSet(name, tests) {
+        testData[name] = {};
+        setTimeout(function() {
+          logTitle(name);
+          for(var i = 0; i < tests.length; ++i) {
+            test(tests[i].library, tests[i].test, testData[name]);
+          }
+        }, 1);
+      }
+      
+      function glMatrixRandom() {
+        return mat4.create([
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100
+        ]);
+      }
+      
+      function mjsRandom() {
+        return new MJS_FLOAT_ARRAY_TYPE([
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100
+        ]);
+      }
+      
+      function canvasMatrixRandom() {
+        return new CanvasMatrix4([
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100
+        ]);
+      }
+      function j3diMatrixRandom() {
+        return new J3DIMatrix4([
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100
+        ]);
+      }
+    </script>
+    
+    
+    <style type="text/css">
+      body {
+        font: 0.8em Verdana,sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <p>
+      This page benchmarks the performance of several matrix libraries intended for use with WebGL: 
+      glMatrix, mjs, CanvasMatrix, and EWGL_math<br/>
+      Benchmark times are averaged over 10 runs of 20,000 iterations of the target operation.
+    </p>
+    <div id="graph" style="width:800px;height:400px;margin:10px"></div>
+    <div id="logDiv"></div>
+
+    <!-- Benchmarks -->
+    <script type="text/javascript">
+      function testMain() {
+        
+        testSet('Multiplication', [
+          { library: 'glMatrix', test: function(count) {
+            var m1 = glMatrixRandom();
+            var m2 = glMatrixRandom();
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.multiply(m1, m2);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'mjs', test: function(count) {
+            var m1 = mjsRandom();
+            var m2 = mjsRandom();
+            var res = mjsRandom();
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              M4x4.mul(m1, m2, res);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'CanvasMatrix', test: function(count) {
+            var m1 = canvasMatrixRandom();
+            var m2 = canvasMatrixRandom();
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              m1.multRight(m2);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'EWGL', test: function(count) {
+            var m1 = m4x4.I().rand();
+            var m2 = m4x4.I().rand();
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              m1.x(m2);
+            }
+            return Date.now()-start;
+          }}
+        ]);
+        
+        testSet('Translation', [
+          { library: 'glMatrix', test: function(count) {
+            var m1 = glMatrixRandom();
+            var v1 = [1, 2, 3];
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.translate(m1, v1);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'mjs', test: function(count) {
+            var m1 = mjsRandom();
+            var v1 = [1, 2, 3];
+            var res = mjsRandom();
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              M4x4.translate(v1, m1, res);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'CanvasMatrix', test: function(count) {
+            var m1 = canvasMatrixRandom();
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              m1.translate(1, 2, 3);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'EWGL', test: function(count) {
+            var m1 = m4x4.I().rand();
+            var v1 = v3.set([1, 2, 3]);
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              m1.translate(v1);
+            }
+            return Date.now()-start;
+          }}
+        ]);
+        
+        testSet('Scaling', [
+          { library: 'glMatrix', test: function(count) {
+            var m1 = glMatrixRandom();
+            var v1 = [1, 2, 3];
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.scale(m1, v1);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'mjs', test: function(count) {
+            var m1 = mjsRandom();
+            var v1 = [1, 2, 3];
+            var res = mjsRandom();
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              M4x4.scale(v1, m1, res);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'CanvasMatrix', test: function(count) {
+            var m1 = canvasMatrixRandom();
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              m1.scale(1, 2, 3);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'EWGL', test: function(count) {
+            var m1 = m4x4.I().rand();
+            var v1 = v3.set([1, 2, 3]);
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              m1.scale(v1);
+            }
+            return Date.now()-start;
+          }}
+        ]);
+        
+        testSet('Rotation (Arbitrary axis)', [
+          { library: 'glMatrix', test: function(count) {
+            var m1 = glMatrixRandom();
+            var v1 = [1, 2, 3];
+            var a = Math.PI/2;
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.rotate(m1, a, v1);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'mjs', test: function(count) {
+            var m1 = mjsRandom();
+            var v1 = [1, 2, 3];
+            var a = Math.PI/2;
+            var res = mjsRandom();
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              M4x4.rotate(a, v1, m1, res);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'CanvasMatrix', test: function(count) {
+            var m1 = canvasMatrixRandom();
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              m1.rotate(90, 1, 2, 3);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'EWGL', test: function(count) {
+            var m1 = m4x4.I().rand();
+            var v1 = v3.set([1, 2, 3]);
+            var a = Math.PI/2;
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              m1.rotate(a, v1);
+            }
+            return Date.now()-start;
+          }}
+        ]);
+        
+        testSet('Rotation (X axis)', [
+          { library: 'glMatrix', test: function(count) {
+            var m1 = glMatrixRandom();
+            var v1 = [1, 0, 0];
+            var a = Math.PI/2;
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.rotate(m1, a, v1);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'mjs', test: function(count) {
+            var m1 = mjsRandom();
+            var v1 = [1, 0, 0];
+            var a = Math.PI/2;
+            var res = mjsRandom();
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              M4x4.rotate(a, v1, m1, res);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'CanvasMatrix', test: function(count) {
+            var m1 = canvasMatrixRandom();
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              m1.rotate(90, 1, 0, 0);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'EWGL', test: function(count) {
+            var m1 = m4x4.I().rand();
+            var v1 = v3.set([1, 0, 0]);
+            var a = Math.PI/2;
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              m1.rotate(a, v1);
+            }
+            return Date.now()-start;
+          }}
+        ]);
+        
+        testSet('Transpose', [
+          { library: 'glMatrix', test: function(count) {
+            var m1 = glMatrixRandom();
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.transpose(m1);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'mjs', test: function(count) {
+            var m1 = mjsRandom();
+            var res = mjsRandom();
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              M4x4.transpose(m1, res);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'CanvasMatrix', test: function(count) {
+            var m1 = canvasMatrixRandom();
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              m1.transpose();
+            }
+            return Date.now()-start;
+          }},
+          { library: 'EWGL', test: function(count) {
+            var m1 = m4x4.I().rand();
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              m1.transpose();
+            }
+            return Date.now()-start;
+          }}
+        ]);
+        
+        testSet('Inverse', [
+          { library: 'glMatrix', test: function(count) {
+            var m1 = glMatrixRandom();
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.inverse(m1);
+            }
+            return Date.now()-start;
+          }},
+          
+          { library: 'mjs', test: function(count) {
+           var m1 = mjsRandom();
+           var res = mjsRandom();
+           var start = Date.now();
+           for (var i = 0; i < count; ++i) {
+             M4x4.inverseOrthonormal(m1, res);
+           }
+           return Date.now()-start;
+          }},
+          
+          // { library: 'mjs', test: null },
+          { library: 'CanvasMatrix', test: function(count) {
+            var m1 = canvasMatrixRandom();
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              m1.invert();
+            }
+            return Date.now()-start;
+          }},
+          { library: 'EWGL', test: function(count) {
+            var m1 = m4x4.I().rand();
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              m1.inverse();
+            }
+            return Date.now()-start;
+          }}
+        ]);
+        
+        testSet('Inverse 3x3', [
+          { library: 'glMatrix', test: function(count) {
+            var m1 = glMatrixRandom();
+            var res = mat3.create();
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.toInverseMat3(m1, res);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'mjs', test: function(count) {
+            var m1 = mjsRandom();
+            var res = new MJS_FLOAT_ARRAY_TYPE(9);
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              M4x4.inverseTo3x3(m1, res);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'CanvasMatrix', test: null },
+          { library: 'EWGL', test: null },
+        ]);
+        
+        testSet('Vector Transformation', [
+          { library: 'glMatrix', test: function(count) {
+            var m1 = glMatrixRandom();
+            var v1 = [1, 2, 3];
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.multiplyVec3(m1, v1);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'mjs', test: function(count) {
+            var m1 = mjsRandom();
+            var v1 = [1, 2, 3];
+            var res = [1, 2, 3];
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              V3.mul4x4(m1, v1, res);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'mjs', test: null },
+          { library: 'CanvasMatrix', test: null },
+          { library: 'EWGL', test: null }
+        ]);
+      };
+      
+      function plotBenchmarks() {
+          var datasets = [];
+          var benchmarkIndex, libraryIndex;
+          benchmarkIndex = 0;
+          var benchmarks = [];
+          var x_axis_tics = [];
+          for (benchmark in testData) {
+            benchmarks.push(benchmark);
+            libraryIndex = 0;
+            for (library in testData[benchmark]) {
+              if (!datasets[libraryIndex]) {
+                datasets.push({});
+                datasets[libraryIndex]['data'] = [];
+                datasets[libraryIndex]['label'] = library;
+                datasets[libraryIndex]['lines'] = { show: true };
+                datasets[libraryIndex]['points'] = { show: true };
+              }
+              datasets[libraryIndex]['data'].push([benchmarkIndex, testData[benchmark][library].avg]);
+              libraryIndex++;
+            }
+            benchmarkIndex++;
+          }
+          for(i = 0; i < benchmarks.length; i++) {
+            x_axis_tics.push([i, benchmarks[i]])
+          }
+          var f = Flotr.draw($('graph'), datasets, 
+            {
+              xaxis:{ 
+                labelsAngle: 60, 
+                ticks: x_axis_tics,
+                title: 'Benchmark', 
+                noTics: benchmarks.length - 1,
+              },
+              yaxis:{ title: 'Time (ms)', min: 0, max: 50 },
+              title: "WebGL Matrix Library Benchmark",
+              subtitle: "Averaged over 10 runs of 20,000 iterations.",
+              grid:{ verticalLines: true, backgroundColor: 'white' },
+              HtmlText: false,
+              legend: { position: 'nw' }
+            }
+          );
+      };
+    </script>
+    <script type="text/javascript">
+     window.onload=function() {
+       testMain();
+       setTimeout(function() { plotBenchmarks() }, 1);
+      }
+    </script>
+  </body>
+</html>
