@@ -125,7 +125,8 @@
     <p>
       This page benchmarks the performance of several matrix libraries intended for use with WebGL: 
       glMatrix, mjs, CanvasMatrix, and EWGL_math<br/>
-      Benchmark times are averaged over 10 runs of 20,000 iterations of the target operation.
+      Benchmark times are averaged over 10 runs of 20,000 iterations of the target operation.<br/>
+      Adapted the benchmarks Brandon Jones created in his <a href=" https://glmatrix.googlecode.com/hg/">glmatrix library</a>.
     </p>
     <div id="graph" style="width:800px;height:400px;margin:10px"></div>
     <div id="logDiv"></div>
@@ -498,7 +499,19 @@
               subtitle: "Averaged over 10 runs of 20,000 iterations.",
               grid:{ verticalLines: true, backgroundColor: 'white' },
               HtmlText: false,
-              legend: { position: 'nw' }
+              legend: { position: 'nw' },
+              mouse:{
+                track: true,
+                lineColor: 'purple',
+                relative: true,
+                position: 'nw',
+                sensibility: 1, // => The smaller this value, the more precise you've to point
+                trackDecimals: 1,
+                trackFormatter: function(obj) { 
+                  return benchmarks[Number(obj.x)] + ', ' + obj.y 
+                }
+              },
+              crosshair:{ mode: 'xy' }
             }
           );
       };
