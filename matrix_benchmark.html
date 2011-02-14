@@ -79,6 +79,7 @@
             test(tests[i].library, tests[i].test, testData[name]);
           }
         }, 1);
+        setTimeout(function() { plotBenchmarks() }, 1);
       }
       
       function glMatrixRandom() {
@@ -698,7 +699,8 @@
                 labelsAngle: 60, 
                 ticks: x_axis_tics,
                 title: 'Benchmark', 
-                noTics: benchmarks.length - 1,
+                noTics: benchmarks.length,
+                min: 0, max: benchmarks.length - 1,
               },
               yaxis:{ title: 'Time (ms)', min: 0, max: 50 },
               title: "WebGL Matrix Library Benchmark",
@@ -725,6 +727,7 @@
     <script type="text/javascript">
      window.onload=function() {
        testMain();
+       plotBenchmarks();
        setTimeout(function() { plotBenchmarks() }, 1);
       }
     </script>
