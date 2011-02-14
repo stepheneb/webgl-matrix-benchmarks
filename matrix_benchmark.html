@@ -124,9 +124,10 @@
   <body>
     <p>
       This page benchmarks the performance of several matrix libraries intended for use with WebGL: 
-      glMatrix, mjs, CanvasMatrix, and EWGL_math<br/>
+      <a href="http://code.google.com/p/glmatrix/">glMatrix</a>, <a href="http://code.google.com/p/webgl-mjs/">mjs</a>, 
+      CanvasMatrix, and <a href="http://code.google.com/p/ewgl-matrices/">EWGL_math</a><br/>
       Benchmark times are averaged over 10 runs of 20,000 iterations of the target operation.<br/>
-      Adapted the benchmarks Brandon Jones created in his <a href=" https://glmatrix.googlecode.com/hg/">glmatrix library</a>.
+      Adapted from the benchmarks Brandon Jones created in his <a href=" https://glmatrix.googlecode.com/hg/">glmatrix library</a>.
     </p>
     <div id="graph" style="width:800px;height:400px;margin:10px"></div>
     <div id="logDiv"></div>
@@ -508,7 +509,7 @@
                 sensibility: 1, // => The smaller this value, the more precise you've to point
                 trackDecimals: 1,
                 trackFormatter: function(obj) { 
-                  return benchmarks[Number(obj.x)] + ', ' + obj.y 
+                  return obj.series.label + ':' + benchmarks[Number(obj.x)] +  ', ' + obj.y 
                 }
               },
               crosshair:{ mode: 'xy' }
