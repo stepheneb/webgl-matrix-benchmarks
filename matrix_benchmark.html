@@ -9,15 +9,18 @@
     <script type="text/javascript" src="js/CanvasMatrix.js"></script>
     <script type="text/javascript" src="js/EWGL_math.js"></script>
     <script type="text/javascript" src="js/mjs.js"></script>
-    
+    <script type="text/javascript" src="js/tdl/base.js"></script>
+
     <!-- Graphing Utilities -->
     <script type="text/javascript" src="flotr/lib/prototype.js"></script>
     <script type="text/javascript" src="flotr/lib/canvas2image.js"></script>
     <script type="text/javascript" src="flotr/lib/canvastext.js"></script>
     <script type="text/javascript" src="flotr/flotr.js"></script>
-    
+
     <!-- Benchmarking utilities -->
     <script type="text/javascript">
+      tdl.require('tdl.math');
+      tdl.require('tdl.fast');
     
       testData = {};
       
@@ -112,6 +115,36 @@
           Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100
         ]);
       }
+      function tdlMathMatrixRandom() {
+        return [
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100
+        ];
+      }
+      function tdlFastMatrixRandom() {
+        return new Float32Array([
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
+          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100
+        ]);
+      }
+      function tdlMathMatrix3Random() {
+        return [
+          Math.random()*100, Math.random()*100, Math.random()*100,
+          Math.random()*100, Math.random()*100, Math.random()*100,
+          Math.random()*100, Math.random()*100, Math.random()*100,
+        ];
+      }
+      function tdlFastMatrix3Random() {
+        return new Float32Array([
+          Math.random()*100, Math.random()*100, Math.random()*100,
+          Math.random()*100, Math.random()*100, Math.random()*100,
+          Math.random()*100, Math.random()*100, Math.random()*100,
+        ]);
+      }
     </script>
     
     
@@ -125,11 +158,17 @@
     <p>
       This page benchmarks the performance of several matrix libraries intended for use with WebGL: 
       <a href="http://code.google.com/p/glmatrix/">glMatrix</a>, <a href="http://code.google.com/p/webgl-mjs/">mjs</a>, 
-      CanvasMatrix, and <a href="http://code.google.com/p/ewgl-matrices/">EWGL_math</a><br/>
+      CanvasMatrix, <a href="http://code.google.com/p/ewgl-matrices/">EWGL_math</a>, and 
+      <a href="http://code.google.com/p/threedlibrary/">tdl</a>.<br/>
       Benchmark times are averaged over 10 runs of 20,000 iterations of the target operation.<br/>
       Adapted from the benchmarks Brandon Jones created in his <a href=" https://glmatrix.googlecode.com/hg/">glmatrix library</a>.
     </p>
     <div id="graph" style="width:800px;height:400px;margin:10px"></div>
+    <p><em>
+      Adapted from the benchmarks Brandon Jones created in his <a href=" https://glmatrix.googlecode.com/hg/">glmatrix library</a>,
+      JavaScript Plotting library: <a href=" http://solutoire.com/flotr/">Flotr</a>.
+    </em></p>
+    <br/><br/>
     <div id="logDiv"></div>
 
     <!-- Benchmarks -->
@@ -173,9 +212,29 @@
               m1.x(m2);
             }
             return Date.now()-start;
+          }},
+          { library: 'TDLMath', test: function(count) {
+            var m1 = tdlMathMatrixRandom();
+            var m2 = tdlMathMatrixRandom();
+            var mat4 = tdl.math.matrix4;
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.mul(m1, m2);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'TDLFast', test: function(count) {
+            var m1 = tdlFastMatrixRandom();
+            var m2 = tdlFastMatrixRandom();
+            var mat4 = tdl.fast.matrix4;
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.mul(m1, m1, m2);
+            }
+            return Date.now()-start;
           }}
         ]);
-        
+
         testSet('Translation', [
           { library: 'glMatrix', test: function(count) {
             var m1 = glMatrixRandom();
@@ -212,9 +271,29 @@
               m1.translate(v1);
             }
             return Date.now()-start;
+          }},
+          { library: 'TDLMath', test: function(count) {
+            var m1 = tdlMathMatrixRandom();
+            var v1 = [1, 2, 3];
+            var start = Date.now();
+            var mat4 = tdl.math.matrix4;
+            for (var i = 0; i < count; ++i) {
+              mat4.translate(m1, v1);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'TDLFast', test: function(count) {
+            var m1 = tdlMathMatrixRandom();
+            var v1 = new Float32Array([1, 2, 3]);
+            var start = Date.now();
+            var mat4 = tdl.fast.matrix4;
+            for (var i = 0; i < count; ++i) {
+              mat4.translate(m1, v1);
+            }
+            return Date.now()-start;
           }}
         ]);
-        
+
         testSet('Scaling', [
           { library: 'glMatrix', test: function(count) {
             var m1 = glMatrixRandom();
@@ -251,9 +330,29 @@
               m1.scale(v1);
             }
             return Date.now()-start;
+          }},
+          { library: 'TDLMath', test: function(count) {
+            var m1 = tdlMathMatrixRandom();
+            var v1 = [1, 2, 3];
+            var start = Date.now();
+            var mat4 = tdl.math.matrix4;
+            for (var i = 0; i < count; ++i) {
+              mat4.scale(m1, v1);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'TDLFast', test: function(count) {
+            var m1 = tdlMathMatrixRandom();
+            var v1 = new Float32Array([1, 2, 3]);
+            var start = Date.now();
+            var mat4 = tdl.fast.matrix4;
+            for (var i = 0; i < count; ++i) {
+              mat4.scale(m1, v1);
+            }
+            return Date.now()-start;
           }}
         ]);
-        
+
         testSet('Rotation (Arbitrary axis)', [
           { library: 'glMatrix', test: function(count) {
             var m1 = glMatrixRandom();
@@ -293,9 +392,29 @@
               m1.rotate(a, v1);
             }
             return Date.now()-start;
+          }},
+          { library: 'TDLMath', test: function(count) {
+            var m1 = tdlMathMatrixRandom();
+            var v1 = [1, 2, 3];
+            var start = Date.now();
+            var mat4 = tdl.math.matrix4;
+            for (var i = 0; i < count; ++i) {
+              mat4.axisRotate(m1, v1, 90);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'TDLFast', test: function(count) {
+            var m1 = tdlMathMatrixRandom();
+            var v1 = new Float32Array([1, 2, 3]);
+            var start = Date.now();
+            var mat4 = tdl.fast.matrix4;
+            for (var i = 0; i < count; ++i) {
+              mat4.axisRotate(m1, v1, 90);
+            }
+            return Date.now()-start;
           }}
         ]);
-        
+
         testSet('Rotation (X axis)', [
           { library: 'glMatrix', test: function(count) {
             var m1 = glMatrixRandom();
@@ -335,9 +454,31 @@
               m1.rotate(a, v1);
             }
             return Date.now()-start;
+          }},
+          { library: 'TDLMath', test: function(count) {
+            var m1 = tdlMathMatrixRandom();
+            var v1 = [1, 2, 3];
+            var a = Math.PI/2;
+            var mat4 = tdl.math.matrix4;
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.rotateX(m1, a);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'TDLFast', test: function(count) {
+            var m1 = tdlMathMatrixRandom();
+            var v1 = new Float32Array([1, 2, 3]);
+            var a = Math.PI/2;
+            var mat4 = tdl.fast.matrix4;
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.rotateX(m1, a);
+            }
+            return Date.now()-start;
           }}
         ]);
-        
+
         testSet('Transpose', [
           { library: 'glMatrix', test: function(count) {
             var m1 = glMatrixRandom();
@@ -371,9 +512,27 @@
               m1.transpose();
             }
             return Date.now()-start;
+          }},
+          { library: 'TDLMath', test: function(count) {
+            var m1 = tdlMathMatrixRandom();
+            var mat4 = tdl.math.matrix4;
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.transpose(m1);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'TDLFast', test: function(count) {
+            var m1 = tdlMathMatrixRandom();
+            var mat4 = tdl.fast.matrix4;
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.transpose(m1, m1);
+            }
+            return Date.now()-start;
           }}
         ]);
-        
+
         testSet('Inverse', [
           { library: 'glMatrix', test: function(count) {
             var m1 = glMatrixRandom();
@@ -383,7 +542,7 @@
             }
             return Date.now()-start;
           }},
-          
+
           { library: 'mjs', test: function(count) {
            var m1 = mjsRandom();
            var res = mjsRandom();
@@ -393,7 +552,7 @@
            }
            return Date.now()-start;
           }},
-          
+
           // { library: 'mjs', test: null },
           { library: 'CanvasMatrix', test: function(count) {
             var m1 = canvasMatrixRandom();
@@ -410,9 +569,27 @@
               m1.inverse();
             }
             return Date.now()-start;
+          }},
+          { library: 'TDLMath', test: function(count) {
+            var m1 = tdlMathMatrixRandom();
+            var mat4 = tdl.math.matrix4;
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.inverse(m1);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'TDLFast', test: function(count) {
+            var m1 = tdlMathMatrixRandom();
+            var mat4 = tdl.fast.matrix4;
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.inverse(m1, m1);
+            }
+            return Date.now()-start;
           }}
         ]);
-        
+
         testSet('Inverse 3x3', [
           { library: 'glMatrix', test: function(count) {
             var m1 = glMatrixRandom();
@@ -434,8 +611,26 @@
           }},
           { library: 'CanvasMatrix', test: null },
           { library: 'EWGL', test: null },
+          { library: 'TDLMath', test: function(count) {
+            var m1 = tdlMathMatrix3Random();
+            var math = tdl.math;
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              math.inverse3(m1);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'TDLFast', test: function(count) {
+            var m1 = tdlMathMatrix3Random();
+            var math = tdl.math;
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              math.inverse3(m1, m1);
+            }
+            return Date.now()-start;
+          }}
         ]);
-        
+
         testSet('Vector Transformation', [
           { library: 'glMatrix', test: function(count) {
             var m1 = glMatrixRandom();
@@ -457,7 +652,18 @@
             return Date.now()-start;
           }},
           { library: 'CanvasMatrix', test: null },
-          { library: 'EWGL', test: null }
+          { library: 'EWGL', test: null },
+          { library: 'TDLMath', test: function(count) {
+            var m1 = tdlMathMatrixRandom();
+            var v1 = [1, 2, 3];
+            var mat4 = tdl.math.matrix4;
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.transformPoint(m1, v1);
+            }
+            return Date.now()-start;
+          }},
+          { library: 'TDLFast', test: null }
         ]);
       };
       

@@ -1,4 +1,4 @@
-These benchmarks for testing the speed of JavaScript matrix libraries are adapted from Brandon Jones benchmarks
+Simple benchmarks for testing the speed of JavaScript matrix libraries adapted from Brandon Jones benchmarks
 in his glmatrix library: https://glmatrix.googlecode.com/hg/
 
 It's based on his code as of this commit:
@@ -7,10 +7,19 @@ It's based on his code as of this commit:
     Date:	October 10, 2010 12:49:00 PM EDT
     Upped version to 0.9.5
 
-Changes include:
+Comparing these matrix libraries:
 
-I'm only includeing the benchmarks.
+* [glMatrix](http://code.google.com/p/glmatrix), [New BSD license](http://www.opensource.org/licenses/bsd-license.php)
+* [mjs](http://code.google.com/p/webgl-mjs), [MIT license](http://www.opensource.org/licenses/mit-license.php)
+* CanvasMatrix
+* [EWGL_math](http://code.google.com/p/ewgl-matrices), [New BSD license](http://www.opensource.org/licenses/bsd-license.php)
+* [tdl](http://code.google.com/p/threedlibrary/), [New BSD license](http://www.opensource.org/licenses/bsd-license.php)
 
-I've updated to the latest mjs as of Dec 15: 16:8e5b0944ef1e and included it in several more tests.
+Changes from Brandon's original benchmark code include:
 
-I've also added a graph display of the results using flotr, see: http://solutoire.com/flotr/
+* Only including the benchmark code from glmatrix.
+* Updated to the latest mjs as of Dec 15: 16:8e5b0944ef1e and included it in several more tests.
+* Added a graph display of the results using flotr, see: http://solutoire.com/flotr/
+
+Brandon's original code was released under the [New BSD license](http://www.opensource.org/licenses/bsd-license.php).
+My additions to the benchmarking code are released under the same license.
