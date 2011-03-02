@@ -1,9 +1,9 @@
 Simple benchmarks for testing the speed of JavaScript matrix libraries adapted from Brandon Jones benchmarks
 in his glmatrix library: https://glmatrix.googlecode.com/hg/
 
-If you have a browswer with WebGL you can run the benchmarks [here](http://stepheneb.github.com/webgl-matrix-benchmarks/matrix_benchmark.html).
+If you have a browser with WebGL you can run the benchmarks [here](http://stepheneb.github.com/webgl-matrix-benchmarks/matrix_benchmark.html).
 
-This work is based on Brandon's work as of as of this commit:
+This work is based on Brandon's work as of this commit:
 
     e5ad8f6975eef038de668914a44ed36e2c611966
     Date:	October 10, 2010 12:49:00 PM EDT
