@@ -101,14 +101,14 @@
       }
       
       function canvasMatrixRandom() {
-        var a =  new CanvasMatrix4([
+        var cm4 =  new CanvasMatrix4()
+        cm4.load([
           Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
           Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
           Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
           Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100
         ]);
-        console.log(a);
-        return a; 
+        return cm4; 
       }
       function j3diMatrixRandom() {
         return new J3DIMatrix4([
