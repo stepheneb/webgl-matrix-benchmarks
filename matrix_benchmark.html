@@ -5,6 +5,9 @@
     <title>Matrix Benchmark</title>
     
     <!-- Common Utilities -->
+    <script type="text/javascript" src="sprintf.js"></script>
+
+    <!-- Matrix Libraries -->
     <script type="text/javascript" src="js/glMatrix.js"></script>
     <script type="text/javascript" src="js/CanvasMatrix.js"></script>
     <script type="text/javascript" src="js/EWGL_math.js"></script>
@@ -12,10 +15,16 @@
     <script type="text/javascript" src="js/tdl/base.js"></script>
 
     <!-- Graphing Utilities -->
+    <link type="text/css" rel="stylesheet" href="flotr/flotr.css"/>
     <script type="text/javascript" src="flotr/lib/prototype.js"></script>
     <script type="text/javascript" src="flotr/lib/canvas2image.js"></script>
     <script type="text/javascript" src="flotr/lib/canvastext.js"></script>
     <script type="text/javascript" src="flotr/flotr.js"></script>
+    
+    <!-- Table Utilities -->
+    <link type="text/css" rel="stylesheet" href="table/table.css"/>
+    <script type="text/javascript" src="table/fastinit.js"></script>
+    <script type="text/javascript" src="table/tablesort.js"></script>
 
     <!-- Benchmarking utilities -->
     <script type="text/javascript">
@@ -79,7 +88,10 @@
             test(tests[i].library, tests[i].test, testData[name]);
           }
         }, 1);
-        setTimeout(function() { plotBenchmarks() }, 1);
+        setTimeout(function() { 
+          plotBenchmarks(); 
+          updateTableData(); 
+        }, 1);
       }
       
       function glMatrixRandom() {
@@ -166,9 +178,18 @@
       Benchmark times are averaged over 10 runs of 20,000 iterations of the target operation.<br/>
     </p>
     <div id="graph" style="width:800px;height:400px;margin:10px"></div>
+    <div id="tablediv" style="font-size:85%;width:800px;margin:10px">
+      <table id='data-table' class='sortable'>
+        <thead id="data-table-head">
+          <tr></tr>
+        </thead>
+        <tbody id="data-table-body"></tbody>
+      </table>
+    </div>
     <p><em>
       Adapted from the benchmarks Brandon Jones created in his <a href=" https://glmatrix.googlecode.com/hg/">glmatrix library</a>.<br/>
-      JavaScript Plotting library: <a href=" http://solutoire.com/flotr/">Flotr</a>.<br/>
+      JavaScript Plotting library: <a href=" http://solutoire.com/flotr/">Flotr</a>; 
+      <a href="http://tetlaw.id.au/view/blog/table-sorting-with-prototype/">Sortable Table</a> by Andrew Tetlaw.<br/>
       The source code for these benchmarks can be found here on <a href="https://github.com/stepheneb/webgl-matrix-benchmarks">github</a>.
     </em></p>
     <br/><br/>
@@ -670,11 +691,12 @@
         ]);
       };
       
+      
       function plotBenchmarks() {
           var datasets = [];
+          var benchmarks = [];
           var benchmarkIndex, libraryIndex;
           benchmarkIndex = 0;
-          var benchmarks = [];
           var x_axis_tics = [];
           for (benchmark in testData) {
             benchmarks.push(benchmark);
@@ -725,11 +747,88 @@
             }
           );
       };
+      
+      var data_table_head = document.getElementById("data-table-head");
+      var data_table_body = document.getElementById("data-table-body");
+
+      var libraries = ["glMatrix", "mjs", "CanvasMatrix", "EWGL", "TDLMath",  "TDLFast"];
+      
+      function library_to_id(library) {
+        return library.toLowerCase().replace(/\W/g, '_');
+      }
+
+      function createTableData() {
+          var row, data, header;
+          row = document.createElement('tr');
+          header = document.createElement('th');
+          header.className = "text sortcol";
+          header.textContent = "Library";
+          row.appendChild(header);
+          for(benchmark in testData) {
+            header = document.createElement('th');
+            header.className = "number sortcol";
+            header.textContent = benchmark;
+            row.appendChild(header);
+          };
+          header = document.createElement('th');
+          header.className = "number sortcol";
+          header.textContent = "Average";
+          row.appendChild(header);
+          data_table_head.deleteRow(0)
+          data_table_head.appendChild(row);
+          
+          for (i = 0; i < libraries.length; i++) {
+            row = document.createElement('tr');
+            row.id = libraries[i] + '_row';
+            data = document.createElement('td');
+            data.textContent = libraries[i];
+            row.appendChild(data);
+            for(benchmark in testData) {
+              data = document.createElement('td');
+              data.id = benchmark + '_' + library_to_id(libraries[i]) + '_data'
+              data.textContent = "";
+              row.appendChild(data);
+            };
+            data = document.createElement('td');
+            data.id = library_to_id(libraries[i]) + '_ave__data'
+            data.textContent = "";
+            row.appendChild(data);
+            data_table_body.appendChild(row);
+         };
+      };
+
+      var  averages = {};
+
+      function updateTableData() {
+        var row, data, value, average;
+        for(benchmark in testData) {
+          for (library in testData[benchmark]) {
+            data = document.getElementById(benchmark + '_' + library_to_id(library) + '_data');
+            value = testData[benchmark][library].avg;
+            data.textContent = value;
+            average = averages[library];
+            if (typeof(average) === "number" && typeof(value) === "number") {
+               averages[library] = (average + value) / 2;
+            } else {
+               averages[library] = value;
+            }
+          };
+        };
+        for (library in averages) {
+          if (averages[library]) {
+            data = document.getElementById(library_to_id(library) + '_ave__data');
+            data.textContent = sprintf("%3.1f", averages[library]);
+          };
+        };
+        SortableTable.load();
+      };
+      
     </script>
     <script type="text/javascript">
      window.onload=function() {
        testMain();
        plotBenchmarks();
+       createTableData();
        setTimeout(function() { plotBenchmarks() }, 1);
       }
     </script>
