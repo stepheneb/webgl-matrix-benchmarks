@@ -6,6 +6,7 @@
     
     <!-- Common Utilities -->
     <script type="text/javascript" src="sprintf.js"></script>
+    <script type="text/javascript" src="js/rand.js"></script>
 
     <!-- Matrix Libraries -->
     <script type="text/javascript" src="js/glMatrix.js"></script>
@@ -59,7 +60,8 @@
         var totalTime = 0;
         var minTime = 0;
         var maxTime = 0;
-        
+        resetPseudoRandom();
+
         for(var i = 0; i < runCount; ++i) {
           var time = f(internalRunCount);
           if(i == 0) {
@@ -94,57 +96,58 @@
         }, 1);
       }
       
+      function radToDeg(angleInRadians) {
+        return angleInRadians * Math.PI / 180;
+      }
+
       function glMatrixRandom() {
-        return mat4.create([
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100
-        ]);
+        var m = mat4.create();
+        var axis = vec3.normalize(vec3.create([pseudoRandom(), pseudoRandom(), pseudoRandom()]));
+        mat4.identity(m);
+        mat4.rotate(m, pseudoRandom(), axis, m);
+        mat4.translate(m, [pseudoRandom(), pseudoRandom(), pseudoRandom()]);
+        return m;
       }
-      
+
       function mjsRandom() {
-        return new MJS_FLOAT_ARRAY_TYPE([
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100
-        ]);
+        var axis = V3.normalize([pseudoRandom(), pseudoRandom(), pseudoRandom()]);
+        var m = M4x4.makeRotate(pseudoRandom(), axis);
+        var m = M4x4.translate([pseudoRandom(), pseudoRandom(), pseudoRandom()], m);
+        return m;
       }
-      
+
       function canvasMatrixRandom() {
-        var cm4 =  new CanvasMatrix4()
-        cm4.load([
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100
-        ]);
-        return cm4; 
+        var m =  new CanvasMatrix4()
+        var axis = V3.normalize([pseudoRandom(), pseudoRandom(), pseudoRandom()]);
+        m.makeIdentity();
+        m.rotate(radToDeg(pseudoRandom()), axis[0], axis[1], axis[2]);
+        m.translate(pseudoRandom(), pseudoRandom(), pseudoRandom());
+        return m;
       }
-      function j3diMatrixRandom() {
-        return new J3DIMatrix4([
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100
-        ]);
+
+      function ewglMatrixRandom() {
+        var m = new m4x4;
+        var axis = (new v3([pseudoRandom(), pseudoRandom(), pseudoRandom()])).normalize();
+        m.rotate(pseudoRandom(), axis);
+        m.translate(new v3([pseudoRandom(), pseudoRandom(), pseudoRandom()]));
+        return m;
       }
+
       function tdlMathMatrixRandom() {
-        return [
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100
-        ];
+        var m = tdl.math.matrix4.identity();
+        var axis = tdl.math.normalize([pseudoRandom(), pseudoRandom(), pseudoRandom()]);
+        tdl.math.matrix4.axisRotate(m, axis, pseudoRandom());
+        tdl.math.matrix4.translate(m, [pseudoRandom(), pseudoRandom(), pseudoRandom()]);
+        return m;
       }
+
       function tdlFastMatrixRandom() {
-        return new Float32Array([
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100,
-          Math.random()*100, Math.random()*100, Math.random()*100, Math.random()*100
-        ]);
+        var m = new Float32Array(16);
+        var axis = tdl.math.normalize([pseudoRandom(), pseudoRandom(), pseudoRandom()]);
+        tdl.fast.matrix4.identity(m);
+        tdl.fast.matrix4.axisRotate(m, axis, pseudoRandom());
+        tdl.fast.matrix4.translate(m, [pseudoRandom(), pseudoRandom(), pseudoRandom()]);
+        return m;
       }
       function tdlMathMatrix3Random() {
         return [
