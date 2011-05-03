@@ -562,7 +562,7 @@
 
         testSet('Inverse', [
           { library: 'glMatrix', test: function(count) {
-            var m1 = glMatrixRandom();
+            var m1 = mat4.perspective(90, 0.5, 1, 1000);
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               mat4.inverse(m1);
@@ -571,7 +571,7 @@
           }},
 
           { library: 'mjs', test: function(count) {
-           var m1 = mjsRandom();
+           var m1 = M4x4.makePerspective(90, 0.5, 1, 1000);
            var res = mjsRandom();
            var start = Date.now();
            for (var i = 0; i < count; ++i) {
@@ -582,7 +582,8 @@
 
           // { library: 'mjs', test: null },
           { library: 'CanvasMatrix', test: function(count) {
-            var m1 = canvasMatrixRandom();
+            var m1 = new CanvasMatrix4();
+            m1.perspective(90, 0.5, 1, 1000);
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               m1.invert();
@@ -590,7 +591,7 @@
             return Date.now()-start;
           }},
           { library: 'EWGL', test: function(count) {
-            var m1 = m4x4.I().rand();
+            var m1 = m4x4.makePerspective(90, 0.5, 1, 1000);
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               m1.inverse();
@@ -598,17 +599,18 @@
             return Date.now()-start;
           }},
           { library: 'TDLMath', test: function(count) {
-            var m1 = tdlMathMatrixRandom();
             var mat4 = tdl.math.matrix4;
+            var m1 = mat4.perspective(Math.PI/2, 0.5, 1, 1000);
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
-              mat4.inverse(m1);
+              m1 = mat4.inverse(m1);
             }
             return Date.now()-start;
           }},
           { library: 'TDLFast', test: function(count) {
             var m1 = tdlMathMatrixRandom();
             var mat4 = tdl.fast.matrix4;
+            mat4.perspective(m1, Math.PI/2, 0.5, 1, 1000);
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               mat4.inverse(m1, m1);
