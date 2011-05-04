@@ -33,6 +33,12 @@
       tdl.require('tdl.fast');
     
       testData = {};
+
+      function debuggerLog(obj) {
+        if (window.console && window.console.log) {
+          window.console.log(obj);
+        }
+      }
       
       function log(html) {
         document.getElementById('logDiv').innerHTML += html + '<br/><br/>'
@@ -63,7 +69,8 @@
         resetPseudoRandom();
 
         for(var i = 0; i < runCount; ++i) {
-          var time = f(internalRunCount);
+          var data = f(internalRunCount);
+          var time = data.time;
           if(i == 0) {
             minTime = time;
             maxTime = time;
@@ -80,14 +87,49 @@
         
         dataLogger[library] = { avg: avg, min: minTime, max: maxTime };
         
+        return data.result;
       }
-      
+
+      function preTest(library, f) {
+        // Repeats each benchmark multiple times to smooth out anomalies
+        // Also tracks min and max times
+
+        if(!f) {
+          return;
+        }
+
+        var internalRunCount = 3;
+        resetPseudoRandom();
+
+        var data = f(internalRunCount);
+        return data.result;
+      }
+
       function testSet(name, tests) {
         testData[name] = {};
         setTimeout(function() {
           logTitle(name);
+          var results = [];
+          var baseResult = null;
           for(var i = 0; i < tests.length; ++i) {
+            var result = preTest(tests[i].library, tests[i].test);
+            results.push(result);
+            if (!baseResult && result) {
+              baseResult= result;
+            }
             test(tests[i].library, tests[i].test, testData[name]);
+          }
+
+          // Compare the results to make sure we are testing the same thing
+          for (var i = 0; i < results.length; ++i) {
+            if (results[i] && !Compare(baseResult, results[i])) {
+              debuggerLog(name);
+              debuggerLog(tests[i].library);
+              debuggerLog(baseResult);
+              debuggerLog(results[i]);
+              log('<strong>' + tests[i].library + ': results do NOT match!!!</strong>');
+              testData[name][tests[i].library].bad = true;
+            }
           }
         }, 1);
         setTimeout(function() { 
@@ -96,8 +138,45 @@
         }, 1);
       }
       
+      var kEpsilon = 0.001;
+      function Compare(a, b, pre) {
+        if (b.m11) {
+          b = [
+            b.m11, b.m12, b.m13, b.m14,
+            b.m21, b.m22, b.m23, b.m24,
+            b.m31, b.m32, b.m33, b.m34,
+            b.m41, b.m42, b.m43, b.m44
+          ];
+        } else if (b.elements) {
+          b = b.elements;
+        }
+        return CompareInner(a, b, '');
+
+        function CompareInner(a, b, pre) {
+          // Check if array.
+          if (typeof(a) === 'number') {
+            if (typeof(b) !== 'number') {
+              return false;
+            }
+            var diff =Math.abs(a - b);
+            if (diff > kEpsilon) {
+              log('<strong>Mismatch: ' + pre + ' ' + a + ' != ' + b + ' diff = ' + diff + '</strong>');
+              return false;
+            }
+          } else if (a.length) {
+            if (a.length !== b.length) return false;
+            for (var i = 0; i < a.length; ++i) {
+              if (!Compare(a[i], b[i], pre + '[' + i.toString() + ']')) return false
+            }
+          } else for (var key in a) {
+            if (!Compare(a[key], b[key], pre + '[' + key + ']')) return false;
+          }
+          return true;
+        }
+      }
+
       function radToDeg(angleInRadians) {
-        return angleInRadians * Math.PI / 180;
+        return angleInRadians * 180 / Math.PI;
       }
 
       function glMatrixRandom() {
@@ -119,9 +198,10 @@
       function canvasMatrixRandom() {
         var m =  new CanvasMatrix4()
         var axis = V3.normalize([pseudoRandom(), pseudoRandom(), pseudoRandom()]);
-        m.makeIdentity();
-        m.rotate(radToDeg(pseudoRandom()), axis[0], axis[1], axis[2]);
-        m.translate(pseudoRandom(), pseudoRandom(), pseudoRandom());
+        var angle = radToDeg(pseudoRandom());
+        var trans = [pseudoRandom(), pseudoRandom(), pseudoRandom()];
+        m.translate(trans[0], trans[1], trans[2]);
+        m.rotate(angle, axis[0], axis[1], axis[2]);
         return m;
       }
 
@@ -149,26 +229,15 @@
         tdl.fast.matrix4.translate(m, [pseudoRandom(), pseudoRandom(), pseudoRandom()]);
         return m;
       }
-      function tdlMathMatrix3Random() {
-        return [
-          Math.random()*100, Math.random()*100, Math.random()*100,
-          Math.random()*100, Math.random()*100, Math.random()*100,
-          Math.random()*100, Math.random()*100, Math.random()*100,
-        ];
-      }
-      function tdlFastMatrix3Random() {
-        return new Float32Array([
-          Math.random()*100, Math.random()*100, Math.random()*100,
-          Math.random()*100, Math.random()*100, Math.random()*100,
-          Math.random()*100, Math.random()*100, Math.random()*100,
-        ]);
-      }
     </script>
     
     
     <style type="text/css">
       body {
         font: 0.8em Verdana,sans-serif;
+      }
+      strong {
+        color: red;
       }
     </style>
   </head>
@@ -210,35 +279,34 @@
             for (var i = 0; i < count; ++i) {
               mat4.multiply(m1, m2);
             }
-            return Date.now()-start;
+            return {time: Date.now()-start, result: m1};
           }},
           { library: 'mjs', test: function(count) {
             var m1 = mjsRandom();
             var m2 = mjsRandom();
-            var res = mjsRandom();
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
-              M4x4.mul(m1, m2, res);
+              M4x4.mul(m1, m2, m1);
             }
-            return Date.now()-start;
+            return {time: Date.now()-start, result: m1};
           }},
           { library: 'CanvasMatrix', test: function(count) {
             var m1 = canvasMatrixRandom();
             var m2 = canvasMatrixRandom();
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
-              m1.multRight(m2);
+              m1.multLeft(m2);
             }
-            return Date.now()-start;
+            return {time: Date.now()-start, result: m1};
           }},
           { library: 'EWGL', test: function(count) {
-            var m1 = m4x4.I().rand();
-            var m2 = m4x4.I().rand();
+            var m1 = ewglMatrixRandom();
+            var m2 = ewglMatrixRandom();
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               m1.x(m2);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'TDLMath', test: function(count) {
             var m1 = tdlMathMatrixRandom();
@@ -246,9 +314,9 @@
             var mat4 = tdl.math.matrix4;
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
-              mat4.mul(m1, m2);
+              m1 = mat4.mul(m2, m1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'TDLFast', test: function(count) {
             var m1 = tdlFastMatrixRandom();
@@ -256,9 +324,9 @@
             var mat4 = tdl.fast.matrix4;
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
-              mat4.mul(m1, m1, m2);
+              mat4.mul(m1, m2, m1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }}
         ]);
 
@@ -270,34 +338,35 @@
             for (var i = 0; i < count; ++i) {
               mat4.translate(m1, v1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'mjs', test: function(count) {
             var m1 = mjsRandom();
             var v1 = [1, 2, 3];
-            var res = mjsRandom();
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
-              M4x4.translate(v1, m1, res);
+              M4x4.translate(v1, m1, m1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'CanvasMatrix', test: function(count) {
-            var m1 = canvasMatrixRandom();
+            var m1 = new CanvasMatrix4();
+            var m2 = canvasMatrixRandom();
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               m1.translate(1, 2, 3);
             }
-            return Date.now()-start;
+            m1.multRight(m2);
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'EWGL', test: function(count) {
-            var m1 = m4x4.I().rand();
+            var m1 = ewglMatrixRandom();
             var v1 = v3.set([1, 2, 3]);
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               m1.translate(v1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'TDLMath', test: function(count) {
             var m1 = tdlMathMatrixRandom();
@@ -307,7 +376,7 @@
             for (var i = 0; i < count; ++i) {
               mat4.translate(m1, v1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'TDLFast', test: function(count) {
             var m1 = tdlMathMatrixRandom();
@@ -317,7 +386,7 @@
             for (var i = 0; i < count; ++i) {
               mat4.translate(m1, v1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }}
         ]);
 
@@ -329,34 +398,35 @@
             for (var i = 0; i < count; ++i) {
               mat4.scale(m1, v1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'mjs', test: function(count) {
             var m1 = mjsRandom();
             var v1 = [1, 2, 3];
-            var res = mjsRandom();
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
-              M4x4.scale(v1, m1, res);
+              M4x4.scale(v1, m1, m1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'CanvasMatrix', test: function(count) {
-            var m1 = canvasMatrixRandom();
+            var m1 = new CanvasMatrix4();
+            var m2 = canvasMatrixRandom();
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               m1.scale(1, 2, 3);
             }
-            return Date.now()-start;
+            m1.multRight(m2);
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'EWGL', test: function(count) {
-            var m1 = m4x4.I().rand();
+            var m1 = ewglMatrixRandom();
             var v1 = v3.set([1, 2, 3]);
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               m1.scale(v1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'TDLMath', test: function(count) {
             var m1 = tdlMathMatrixRandom();
@@ -366,7 +436,7 @@
             for (var i = 0; i < count; ++i) {
               mat4.scale(m1, v1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'TDLFast', test: function(count) {
             var m1 = tdlMathMatrixRandom();
@@ -376,7 +446,7 @@
             for (var i = 0; i < count; ++i) {
               mat4.scale(m1, v1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }}
         ]);
 
@@ -389,56 +459,60 @@
             for (var i = 0; i < count; ++i) {
               mat4.rotate(m1, a, v1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'mjs', test: function(count) {
             var m1 = mjsRandom();
             var v1 = [1, 2, 3];
             var a = Math.PI/2;
-            var res = mjsRandom();
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
-              M4x4.rotate(a, v1, m1, res);
+              M4x4.rotate(a, v1, m1, m1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'CanvasMatrix', test: function(count) {
-            var m1 = canvasMatrixRandom();
+            var m1 = new CanvasMatrix4();
+            var m2 = canvasMatrixRandom();
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               m1.rotate(90, 1, 2, 3);
             }
-            return Date.now()-start;
+            m1.multRight(m2);
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'EWGL', test: function(count) {
-            var m1 = m4x4.I().rand();
+            var m1 = ewglMatrixRandom();
             var v1 = v3.set([1, 2, 3]);
             var a = Math.PI/2;
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
-              m1.rotate(a, v1);
+              m1.rotate(a, v1, m1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'TDLMath', test: function(count) {
             var m1 = tdlMathMatrixRandom();
-            var v1 = [1, 2, 3];
-            var start = Date.now();
+            var v1 = tdl.math.normalize([1, 2, 3]);
             var mat4 = tdl.math.matrix4;
+            var a = Math.PI/2;
+            var start = Date.now();
             for (var i = 0; i < count; ++i) {
-              mat4.axisRotate(m1, v1, 90);
+              mat4.axisRotate(m1, v1, a);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'TDLFast', test: function(count) {
             var m1 = tdlMathMatrixRandom();
             var v1 = new Float32Array([1, 2, 3]);
-            var start = Date.now();
+            tdl.fast.normalize(v1, v1);
             var mat4 = tdl.fast.matrix4;
+            var a = Math.PI/2;
+            var start = Date.now();
             for (var i = 0; i < count; ++i) {
-              mat4.axisRotate(m1, v1, 90);
+              mat4.axisRotate(m1, v1, a);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }}
         ]);
 
@@ -451,58 +525,57 @@
             for (var i = 0; i < count; ++i) {
               mat4.rotate(m1, a, v1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'mjs', test: function(count) {
             var m1 = mjsRandom();
             var v1 = [1, 0, 0];
             var a = Math.PI/2;
-            var res = mjsRandom();
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
-              M4x4.rotate(a, v1, m1, res);
+              M4x4.rotate(a, v1, m1, m1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'CanvasMatrix', test: function(count) {
-            var m1 = canvasMatrixRandom();
+            var m1 = new CanvasMatrix4();
+            var m2 = canvasMatrixRandom();
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               m1.rotate(90, 1, 0, 0);
             }
-            return Date.now()-start;
+            m1.multRight(m2);
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'EWGL', test: function(count) {
-            var m1 = m4x4.I().rand();
+            var m1 = ewglMatrixRandom();
             var v1 = v3.set([1, 0, 0]);
             var a = Math.PI/2;
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               m1.rotate(a, v1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'TDLMath', test: function(count) {
             var m1 = tdlMathMatrixRandom();
-            var v1 = [1, 2, 3];
             var a = Math.PI/2;
             var mat4 = tdl.math.matrix4;
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               mat4.rotateX(m1, a);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'TDLFast', test: function(count) {
             var m1 = tdlMathMatrixRandom();
-            var v1 = new Float32Array([1, 2, 3]);
             var a = Math.PI/2;
             var mat4 = tdl.fast.matrix4;
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               mat4.rotateX(m1, a);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }}
         ]);
 
@@ -513,16 +586,15 @@
             for (var i = 0; i < count; ++i) {
               mat4.transpose(m1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'mjs', test: function(count) {
             var m1 = mjsRandom();
-            var res = mjsRandom();
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
-              M4x4.transpose(m1, res);
+              M4x4.transpose(m1, m1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'CanvasMatrix', test: function(count) {
             var m1 = canvasMatrixRandom();
@@ -530,24 +602,24 @@
             for (var i = 0; i < count; ++i) {
               m1.transpose();
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'EWGL', test: function(count) {
-            var m1 = m4x4.I().rand();
+            var m1 = ewglMatrixRandom();
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               m1.transpose();
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'TDLMath', test: function(count) {
             var m1 = tdlMathMatrixRandom();
             var mat4 = tdl.math.matrix4;
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
-              mat4.transpose(m1);
+              m1 = mat4.transpose(m1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'TDLFast', test: function(count) {
             var m1 = tdlMathMatrixRandom();
@@ -556,7 +628,7 @@
             for (var i = 0; i < count; ++i) {
               mat4.transpose(m1, m1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }}
         ]);
 
@@ -567,20 +639,16 @@
             for (var i = 0; i < count; ++i) {
               mat4.inverse(m1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
-
           { library: 'mjs', test: function(count) {
            var m1 = M4x4.makePerspective(90, 0.5, 1, 1000);
-           var res = mjsRandom();
            var start = Date.now();
            for (var i = 0; i < count; ++i) {
-             M4x4.inverseOrthonormal(m1, res);
+             M4x4.inverseOrthonormal(m1, m1);
            }
-           return Date.now()-start;
+           return {time:Date.now()-start, result: m1};
           }},
-
-          // { library: 'mjs', test: null },
           { library: 'CanvasMatrix', test: function(count) {
             var m1 = new CanvasMatrix4();
             m1.perspective(90, 0.5, 1, 1000);
@@ -588,7 +656,7 @@
             for (var i = 0; i < count; ++i) {
               m1.invert();
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'EWGL', test: function(count) {
             var m1 = m4x4.makePerspective(90, 0.5, 1, 1000);
@@ -596,7 +664,7 @@
             for (var i = 0; i < count; ++i) {
               m1.inverse();
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'TDLMath', test: function(count) {
             var mat4 = tdl.math.matrix4;
@@ -605,7 +673,7 @@
             for (var i = 0; i < count; ++i) {
               m1 = mat4.inverse(m1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'TDLFast', test: function(count) {
             var m1 = tdlMathMatrixRandom();
@@ -615,7 +683,7 @@
             for (var i = 0; i < count; ++i) {
               mat4.inverse(m1, m1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }}
         ]);
 
@@ -626,8 +694,9 @@
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               mat4.toInverseMat3(m1, res);
+              mat3.toMat4(res, m1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'mjs', test: function(count) {
             var m1 = mjsRandom();
@@ -635,50 +704,51 @@
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               M4x4.inverseTo3x3(m1, res);
+              m1[0] = res[0];
+              m1[1] = res[1];
+              m1[2] = res[2];
+              m1[3] = 0;
+              m1[4] = res[3];
+              m1[5] = res[4];
+              m1[6] = res[5];
+              m1[7] = 0;
+              m1[8] = res[6];
+              m1[9] = res[7];
+              m1[10] = res[8];
+              m1[11] = 0;
+              m1[12] = 0;
+              m1[13] = 0;
+              m1[14] = 0;
+              m1[15] = 1;              
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: m1};
           }},
           { library: 'CanvasMatrix', test: null },
           { library: 'EWGL', test: null },
           { library: 'TDLMath', test: function(count) {
-            var m1 = tdlMathMatrix3Random();
+            var m1 = tdl.math.matrix4.getUpper3x3(tdlMathMatrixRandom());
             var math = tdl.math;
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
-              math.inverse3(m1);
+              m1 = math.inverse3(m1);
             }
-            return Date.now()-start;
+            var m2 = tdl.math.matrix4.identity();
+            tdl.math.matrix4.setUpper3x3(m2, m1);
+            return {time:Date.now()-start, result: m2};
           }},
-          { library: 'TDLFast', test: function(count) {
-            var m1 = tdlMathMatrix3Random();
-            var math = tdl.math;
-            var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              math.inverse3(m1, m1);
-            }
-            return Date.now()-start;
-          }}
+          { library: 'TDLFast', test: null}
         ]);
 
         testSet('Vector Transformation', [
-          { library: 'glMatrix', test: function(count) {
-            var m1 = glMatrixRandom();
-            var v1 = [1, 2, 3];
-            var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.multiplyVec3(m1, v1);
-            }
-            return Date.now()-start;
-          }},
+          { library: 'glMatrix', test: null},
           { library: 'mjs', test: function(count) {
             var m1 = mjsRandom();
             var v1 = [1, 2, 3];
-            var res = [1, 2, 3];
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
-              V3.mul4x4(m1, v1, res);
+              V3.mul4x4(m1, v1, v1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: v1};
           }},
           { library: 'CanvasMatrix', test: null },
           { library: 'EWGL', test: null },
@@ -688,9 +758,9 @@
             var mat4 = tdl.math.matrix4;
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
-              mat4.transformPoint(m1, v1);
+              v1 = mat4.transformPoint(m1, v1);
             }
-            return Date.now()-start;
+            return {time:Date.now()-start, result: v1};
           }},
           { library: 'TDLFast', test: null }
         ]);
@@ -811,6 +881,9 @@
             data = document.getElementById(benchmark + '_' + library_to_id(library) + '_data');
             value = testData[benchmark][library].avg;
             data.textContent = value;
+            if (testData[benchmark][library].bad) {
+              data.textContent += "(bad)";
+            }
             average = averages[library];
             if (typeof(average) === "number" && typeof(value) === "number") {
                averages[library] = (average + value) / 2;

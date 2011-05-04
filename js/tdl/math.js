@@ -217,7 +217,7 @@ tdl.math.resetPseudoRandom = function() {
  * @param {number} n
  */
 tdl.math.randomInt = function(n) {
-  return Math.min(Math.floor(Math.random() * n), n - 1);
+  return Math.floor(Math.random() * n);
 }
 
 /**
@@ -768,7 +768,7 @@ tdl.math.rowMajor.mulMatrixVector = function(m, v) {
   for (var i = 0; i < 4; ++i) {
     r[i] = 0.0;
     for (var j = 0; j < 4; ++j)
-      r[i] += row[i * 4 + j] * v[j];
+      r[i] += m[i * 4 + j] * v[j];
   }
   return r;
 };
@@ -1065,9 +1065,9 @@ tdl.math.rowMajor.mulMatrixMatrix = function(a, b) {
   var r = [];
   for (var i = 0; i < 4; ++i) {
     for (var j = 0; j < 4; ++j) {
-      v[i*4+j] = 0.0;
+      r[i*4+j] = 0.0;
       for (var k = 0; k < 4; ++k)
-        v[i*4+j] += a[i*4+k] * b[k*4+j]; // kth row, jth column.
+        r[i*4+j] += a[i*4+k] * b[k*4+j]; // kth row, jth column.
     }
   }
   return r;
@@ -1085,9 +1085,9 @@ tdl.math.columnMajor.mulMatrixMatrix = function(a, b) {
   var r = [];
   for (var i = 0; i < 4; ++i) {
     for (var j = 0; j < 4; ++j) {
-      v[i*4+j] = 0.0;
+      r[i*4+j] = 0.0;
       for (var k = 0; k < 4; ++k)
-        v[i*4+j] += b[i*4+k] * a[k*4+j]; // kth column, jth row.
+        r[i*4+j] += b[i*4+k] * a[k*4+j]; // kth column, jth row.
     }
   }
   return r;
@@ -1160,9 +1160,10 @@ tdl.math.rowMajor.row = function(m, i) {
  * accessed in [column][row] fashion.
  * @param {!tdl.math.Matrix} m The matrix.
  * @param {number} i The index of the desired row.
+ * @param {number} opt_size Unknown (to dkogan)
  * @return {!tdl.math.Vector} The ith row of m.
  */
-tdl.math.columnMajor.row = function(m, i) {
+tdl.math.columnMajor.row = function(m, i, opt_size) {
   opt_size = opt_size || 4;
   var r = [];
   for (var j = 0; j < opt_size; ++j) {
@@ -1186,10 +1187,39 @@ tdl.math.row = null;
  */
 tdl.math.transpose = function(m) {
   var r = [];
-  for (var j = 0; j < 4; ++j) {
-    for (var i = 0; i < 4; ++i)
-      r[j*4+i] = m[i*4+j];
-  }
+  var m00 = m[0 * 4 + 0];
+  var m01 = m[0 * 4 + 1];
+  var m02 = m[0 * 4 + 2];
+  var m03 = m[0 * 4 + 3];
+  var m10 = m[1 * 4 + 0];
+  var m11 = m[1 * 4 + 1];
+  var m12 = m[1 * 4 + 2];
+  var m13 = m[1 * 4 + 3];
+  var m20 = m[2 * 4 + 0];
+  var m21 = m[2 * 4 + 1];
+  var m22 = m[2 * 4 + 2];
+  var m23 = m[2 * 4 + 3];
+  var m30 = m[3 * 4 + 0];
+  var m31 = m[3 * 4 + 1];
+  var m32 = m[3 * 4 + 2];
+  var m33 = m[3 * 4 + 3];
+
+  r[ 0] = m00;
+  r[ 1] = m10;
+  r[ 2] = m20;
+  r[ 3] = m30;
+  r[ 4] = m01;
+  r[ 5] = m11;
+  r[ 6] = m21;
+  r[ 7] = m31;
+  r[ 8] = m02;
+  r[ 9] = m12;
+  r[10] = m22;
+  r[11] = m32;
+  r[12] = m03;
+  r[13] = m13;
+  r[14] = m23;
+  r[15] = m33;
   return r;
 };
 
@@ -1696,14 +1726,14 @@ tdl.math.matrix4.setIdentity = function(m) {
  * @return {!tdl.math.Matrix4} The perspective matrix.
  */
 tdl.math.matrix4.perspective = function(angle, aspect, near, far) {
-  var f = Math.tan(0.5 * (Math.PI - angle));
-  var range = near - far;
+  var f = Math.tan(Math.PI * 0.5 - 0.5 * angle);
+  var rangeInv = 1.0 / (near - far);
 
   return [
     f / aspect, 0, 0, 0,
     0, f, 0, 0,
-    0, 0, far / range, -1,
-    0, 0, near * far / range, 0
+    0, 0, (near + far) * rangeInv, -1,
+    0, 0, near * far * rangeInv * 2, 0
   ];
 };
 
