@@ -1007,10 +1007,8 @@
          };
       };
 
-      var  averages = {};
-
       function updateTableData() {
-        var row, data, value, average;
+        var row, data, value, totals = {}, counts = {};
         for(benchmark in testData) {
           for (library in testData[benchmark]) {
             data = document.getElementById(benchmark + '_' + library_to_id(library) + '_data');
@@ -1019,18 +1017,16 @@
             if (testData[benchmark][library].bad) {
               data.textContent += "(bad)";
             }
-            average = averages[library];
-            if (typeof(average) === "number" && typeof(value) === "number") {
-               averages[library] = (average + value) / 2;
-            } else {
-               averages[library] = value;
+            if (typeof(value) === "number") {
+               totals[library] = value + (totals[library] || 0);
+               counts[library] = 1 + (counts[library] || 0);
             }
           };
         };
-        for (library in averages) {
-          if (averages[library]) {
+        for (library in totals) {
+          if (counts[library]) {
             data = document.getElementById(library_to_id(library) + '_ave__data');
-            data.textContent = sprintf("%3.1f", averages[library]);
+            data.textContent = sprintf("%3.1f", totals[library] / counts[library]);
           };
         };
         SortableTable.load();
