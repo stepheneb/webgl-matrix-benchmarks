@@ -14,6 +14,7 @@
     <script type="text/javascript" src="js/EWGL_math.js"></script>
     <script type="text/javascript" src="js/mjs.js"></script>
     <script type="text/javascript" src="js/tdl/base.js"></script>
+    <script type="text/javascript" src="js/goog/base.js"></script>
 
     <!-- Graphing Utilities -->
     <link type="text/css" rel="stylesheet" href="flotr/flotr.css"/>
@@ -31,7 +32,9 @@
     <script type="text/javascript">
       tdl.require('tdl.math');
       tdl.require('tdl.fast');
-    
+      goog.require('goog.vec.Matrix4');
+      goog.require('goog.vec.Matrix3');
+
       testData = {};
 
       function debuggerLog(obj) {
@@ -98,7 +101,7 @@
           return;
         }
 
-        var internalRunCount = 3;
+        var internalRunCount = 5;
         resetPseudoRandom();
 
         var data = f(internalRunCount);
@@ -229,6 +232,15 @@
         tdl.fast.matrix4.translate(m, [pseudoRandom(), pseudoRandom(), pseudoRandom()]);
         return m;
       }
+
+      function closureMatrixRandom() {
+        var m = goog.vec.Matrix4.createIdentity();
+        var axis = goog.vec.Vec3.createFromArray([pseudoRandom(), pseudoRandom(), pseudoRandom()]);
+        goog.vec.Vec3.normalize(axis, axis);
+        goog.vec.Matrix4.applyRotate(m, pseudoRandom(), axis[0], axis[1], axis[2]);
+        goog.vec.Matrix4.applyTranslate(m, pseudoRandom(), pseudoRandom(), pseudoRandom());
+        return m;
+      }
     </script>
     
     
@@ -245,8 +257,9 @@
     <p>
       This page benchmarks the performance of several matrix libraries intended for use with WebGL: 
       <a href="http://code.google.com/p/glmatrix/">glMatrix</a>, <a href="http://code.google.com/p/webgl-mjs/">mjs</a>, 
-      CanvasMatrix, <a href="http://code.google.com/p/ewgl-matrices/">EWGL_math</a>, and 
-      <a href="http://code.google.com/p/threedlibrary/">tdl</a>.<br/>
+      CanvasMatrix, <a href="http://code.google.com/p/ewgl-matrices/">EWGL_math</a>,  
+      <a href="http://code.google.com/p/threedlibrary/">tdl</a>, and 
+      <a href="http://closure-library.googlecode.com/">Google's Closure</a>.<br/>
       Benchmark times are averaged over 10 runs of 20,000 iterations of the target operation.<br/>
     </p>
     <div id="graph" style="width:800px;height:400px;margin:10px"></div>
@@ -327,6 +340,16 @@
               mat4.mul(m1, m2, m1);
             }
             return {time:Date.now()-start, result: m1};
+          }},
+          { library: 'closure', test: function(count) {
+            var m1 = closureMatrixRandom();
+            var m2 = closureMatrixRandom();
+            var mat4 = goog.vec.Matrix4;
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.multMat(m1, m2, m1);
+            }
+            return {time:Date.now()-start, result: m1};
           }}
         ]);
 
@@ -387,6 +410,16 @@
               mat4.translate(m1, v1);
             }
             return {time:Date.now()-start, result: m1};
+          }},
+          { library: 'closure', test: function(count) {
+            var m1 = closureMatrixRandom();
+            var v1 = goog.vec.Vec3.createFromValues(1, 2, 3);
+            var mat4 = goog.vec.Matrix4;
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.applyTranslate(m1, v1[0], v1[1], v1[2]);
+            }
+            return {time:Date.now()-start, result: m1};
           }}
         ]);
 
@@ -445,6 +478,16 @@
             var mat4 = tdl.fast.matrix4;
             for (var i = 0; i < count; ++i) {
               mat4.scale(m1, v1);
+            }
+            return {time:Date.now()-start, result: m1};
+          }},
+          { library: 'closure', test: function(count) {
+            var m1 = closureMatrixRandom();
+            var v1 = goog.vec.Vec3.createFromValues(1, 2, 3);
+            var mat4 = goog.vec.Matrix4;
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.applyScale(m1, v1[0], v1[1], v1[2]);
             }
             return {time:Date.now()-start, result: m1};
           }}
@@ -513,6 +556,18 @@
               mat4.axisRotate(m1, v1, a);
             }
             return {time:Date.now()-start, result: m1};
+          }},
+          { library: 'closure', test: function(count) {
+            var m1 = closureMatrixRandom();
+            var v1 = goog.vec.Vec3.createFromValues(1, 2, 3);
+            goog.vec.Vec3.normalize(v1, v1);
+            var mat4 = goog.vec.Matrix4;
+            var a = Math.PI/2;
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.applyRotate(m1, a, v1[0], v1[1], v1[2]);
+            }
+            return {time:Date.now()-start, result: m1};
           }}
         ]);
 
@@ -576,6 +631,17 @@
               mat4.rotateX(m1, a);
             }
             return {time:Date.now()-start, result: m1};
+          }},
+          { library: 'closure', test: function(count) {
+            var m1 = closureMatrixRandom();
+            var v1 = goog.vec.Vec3.createFromValues(1, 0, 0);
+            var mat4 = goog.vec.Matrix4;
+            var a = Math.PI/2;
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.applyRotate(m1, a, v1[0], v1[1], v1[2]);
+            }
+            return {time:Date.now()-start, result: m1};
           }}
         ]);
 
@@ -624,6 +690,15 @@
           { library: 'TDLFast', test: function(count) {
             var m1 = tdlMathMatrixRandom();
             var mat4 = tdl.fast.matrix4;
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.transpose(m1, m1);
+            }
+            return {time:Date.now()-start, result: m1};
+          }},
+          { library: 'closure', test: function(count) {
+            var m1 = closureMatrixRandom();
+            var mat4 = goog.vec.Matrix4;
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               mat4.transpose(m1, m1);
@@ -684,6 +759,16 @@
               mat4.inverse(m1, m1);
             }
             return {time:Date.now()-start, result: m1};
+          }},
+          { library: 'closure', test: function(count) {
+            var m1 = closureMatrixRandom();
+            var mat4 = goog.vec.Matrix4;
+            mat4.makePerspective(m1, Math.PI/2, 0.5, 1, 1000);
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.invert(m1, m1);
+            }
+            return {time:Date.now()-start, result: m1};
           }}
         ]);
 
@@ -736,7 +821,25 @@
             tdl.math.matrix4.setUpper3x3(m2, m1);
             return {time:Date.now()-start, result: m2};
           }},
-          { library: 'TDLFast', test: null}
+          { library: 'TDLFast', test: null},
+          { library: 'closure', test: function(count) {
+            var m1 = closureMatrixRandom();
+            m1 = goog.vec.Matrix3.createFromValues(
+                m1[0], m1[1], m1[2],
+                m1[4], m1[5], m1[7],
+                m1[8], m1[9], m1[10]);
+            var mat3 = goog.vec.Matrix3;
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat3.invert(m1, m1);
+            }
+            var m2 = goog.vec.Matrix4.createFromValues(
+                m1[0], m1[1], m1[2], 0,
+                m1[3], m1[4], m1[5], 0,
+                m1[6], m1[7], m1[8], 0,
+                0, 0, 0, 1);
+            return {time:Date.now()-start, result: m2};
+          }},
         ]);
 
         testSet('Vector Transformation', [
@@ -762,7 +865,17 @@
             }
             return {time:Date.now()-start, result: v1};
           }},
-          { library: 'TDLFast', test: null }
+          { library: 'TDLFast', test: null },
+          { library: 'closure', test: function(count) {
+            var m1 = closureMatrixRandom();
+            var v1 = goog.vec.Vec3.createFromValues(1, 2, 3);
+            var mat4 = goog.vec.Matrix4;
+            var start = Date.now();
+            for (var i = 0; i < count; ++i) {
+              mat4.multVec3Projective(m1, v1, v1);
+            }
+            return {time:Date.now()-start, result: v1};
+          }},
         ]);
       };
       
@@ -826,7 +939,7 @@
       var data_table_head = document.getElementById("data-table-head");
       var data_table_body = document.getElementById("data-table-body");
 
-      var libraries = ["glMatrix", "mjs", "CanvasMatrix", "EWGL", "TDLMath",  "TDLFast"];
+      var libraries = ["glMatrix", "mjs", "CanvasMatrix", "EWGL", "TDLMath",  "TDLFast", "closure"];
       
       function library_to_id(library) {
         return library.toLowerCase().replace(/\W/g, '_');
