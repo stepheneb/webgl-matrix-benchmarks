@@ -36,6 +36,8 @@
       goog.require('goog.vec.Matrix3');
 
       testData = {};
+      testSets = [];
+      testSetIndex = 0;
 
       function debuggerLog(obj) {
         if (window.console && window.console.log) {
@@ -65,7 +67,7 @@
         }
         
         var runCount = 10;
-        var internalRunCount = 20000;
+        var internalRunCount = 50000;
         var totalTime = 0;
         var minTime = 0;
         var maxTime = 0;
@@ -108,8 +110,13 @@
         return data.result;
       }
 
+      // Adds a test
       function testSet(name, tests) {
         testData[name] = {};
+        testSets.push({name: name, tests: tests});
+      }
+
+      function runTestSet(name, tests) {
         setTimeout(function() {
           logTitle(name);
           var results = [];
@@ -134,11 +141,19 @@
               testData[name][tests[i].library].bad = true;
             }
           }
-        }, 1);
-        setTimeout(function() { 
           plotBenchmarks(); 
           updateTableData(); 
+          setTimeout(function() { 
+            runNextTest();
+          }, 100);
         }, 1);
+      }
+
+      function runNextTest() {
+        if (testSetIndex < testSets.length) {
+          var set = testSets[testSetIndex++];
+          runTestSet(set.name, set.tests);
+        }
       }
       
       var kEpsilon = 0.001;
@@ -260,7 +275,7 @@
       CanvasMatrix, <a href="http://code.google.com/p/ewgl-matrices/">EWGL_math</a>,  
       <a href="http://code.google.com/p/threedlibrary/">tdl</a>, and 
       <a href="http://closure-library.googlecode.com/">Google's Closure</a>.<br/>
-      Benchmark times are averaged over 10 runs of 20,000 iterations of the target operation.<br/>
+      Benchmark times are averaged over 10 runs of 50,000 iterations of the target operation.<br/>
     </p>
     <div id="graph" style="width:800px;height:400px;margin:10px"></div>
     <div id="tablediv" style="font-size:85%;width:800px;margin:10px">
@@ -881,6 +896,8 @@
             return {time:Date.now()-start, result: v1};
           }},
         ]);
+
+        runNextTest();
       };
       
       
