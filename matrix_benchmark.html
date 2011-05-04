@@ -1008,26 +1008,42 @@
 
       function updateTableData() {
         var row, data, value, totals = {}, counts = {};
-        for(benchmark in testData) {
-          for (library in testData[benchmark]) {
+        for(var benchmark in testData) {
+          var bestLibraries;
+          var bestAverage = -1;
+          for (var library in testData[benchmark]) {
             data = document.getElementById(benchmark + '_' + library_to_id(library) + '_data');
             value = testData[benchmark][library].avg;
             data.textContent = value;
             if (testData[benchmark][library].bad) {
               data.textContent += "(bad)";
+              data.style.backgroundColor = '#fcc';
             }
             if (typeof(value) === "number") {
                totals[library] = value + (totals[library] || 0);
                counts[library] = 1 + (counts[library] || 0);
+               if (bestAverage < 0 || value < bestAverage) {
+                 bestAverage = value;
+                 bestLibraries = [library];
+               } else if (value == bestAverage) {
+                 bestLibraries.push(library);
+               }
             }
-          };
-        };
-        for (library in totals) {
+          }
+          if (bestAverage > 0) {
+            for (var i = 0; i < bestLibraries.length; ++i) {
+              var library = bestLibraries[i];
+              data = document.getElementById(benchmark + '_' + library_to_id(library) + '_data');
+              data.style.backgroundColor = '#acf';
+            }
+          }
+        }
+        for (var library in totals) {
           if (counts[library]) {
             data = document.getElementById(library_to_id(library) + '_ave__data');
             data.textContent = sprintf("%3.1f", totals[library] / counts[library]);
-          };
-        };
+          }
+        }
         SortableTable.load();
       };
       
