@@ -357,7 +357,7 @@
         testSet('Translation', [
           { library: 'glMatrix', test: function(count) {
             var m1 = glMatrixRandom();
-            var v1 = [1, 2, 3];
+            var v1 = vec3.create([1, 2, 3]);
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               mat4.translate(m1, v1);
@@ -366,7 +366,7 @@
           }},
           { library: 'mjs', test: function(count) {
             var m1 = mjsRandom();
-            var v1 = [1, 2, 3];
+            var v1 = V3.$(1, 2, 3);
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               M4x4.translate(v1, m1, m1);
@@ -385,7 +385,7 @@
           }},
           { library: 'EWGL', test: function(count) {
             var m1 = ewglMatrixRandom();
-            var v1 = v3.set([1, 2, 3]);
+            var v1 = new v3([1, 2, 3]);
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               m1.translate(v1);
@@ -427,7 +427,7 @@
         testSet('Scaling', [
           { library: 'glMatrix', test: function(count) {
             var m1 = glMatrixRandom();
-            var v1 = [1, 2, 3];
+            var v1 = vec3.create([1, 2, 3]);
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               mat4.scale(m1, v1);
@@ -436,7 +436,7 @@
           }},
           { library: 'mjs', test: function(count) {
             var m1 = mjsRandom();
-            var v1 = [1, 2, 3];
+            var v1 = V3.$(1, 2, 3);
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               M4x4.scale(v1, m1, m1);
@@ -455,7 +455,7 @@
           }},
           { library: 'EWGL', test: function(count) {
             var m1 = ewglMatrixRandom();
-            var v1 = v3.set([1, 2, 3]);
+            var v1 = new v3([1, 2, 3]);
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               m1.scale(v1);
@@ -497,7 +497,7 @@
         testSet('Rotation (Arbitrary axis)', [
           { library: 'glMatrix', test: function(count) {
             var m1 = glMatrixRandom();
-            var v1 = [1, 2, 3];
+            var v1 = vec3.create([1, 2, 3]);
             var a = Math.PI/2;
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
@@ -507,7 +507,7 @@
           }},
           { library: 'mjs', test: function(count) {
             var m1 = mjsRandom();
-            var v1 = [1, 2, 3];
+            var v1 = V3.$(1, 2, 3);
             var a = Math.PI/2;
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
@@ -527,7 +527,7 @@
           }},
           { library: 'EWGL', test: function(count) {
             var m1 = ewglMatrixRandom();
-            var v1 = v3.set([1, 2, 3]);
+            var v1 = new v3([1, 2, 3]);
             var a = Math.PI/2;
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
@@ -575,7 +575,7 @@
         testSet('Rotation (X axis)', [
           { library: 'glMatrix', test: function(count) {
             var m1 = glMatrixRandom();
-            var v1 = [1, 0, 0];
+            var v1 = vec3.create([1, 0, 0]);
             var a = Math.PI/2;
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
@@ -585,7 +585,7 @@
           }},
           { library: 'mjs', test: function(count) {
             var m1 = mjsRandom();
-            var v1 = [1, 0, 0];
+            var v1 = V3.$(1, 0, 0);
             var a = Math.PI/2;
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
@@ -605,7 +605,7 @@
           }},
           { library: 'EWGL', test: function(count) {
             var m1 = ewglMatrixRandom();
-            var v1 = v3.set([1, 0, 0]);
+            var v1 = new v3([1, 0, 0]);
             var a = Math.PI/2;
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
@@ -847,7 +847,7 @@
           { library: 'glMatrix', test: null},
           { library: 'mjs', test: function(count) {
             var m1 = mjsRandom();
-            var v1 = [1, 2, 3];
+            var v1 = V3.$(1, 2, 3);
             var start = Date.now();
             for (var i = 0; i < count; ++i) {
               V3.mul4x4(m1, v1, v1);
