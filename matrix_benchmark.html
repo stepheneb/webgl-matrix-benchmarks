@@ -3,7 +3,7 @@
 <html>
   <head>
     <title>Matrix Benchmark</title>
-    
+
     <!-- Common Utilities -->
     <script type="text/javascript" src="sprintf.js"></script>
     <script type="text/javascript" src="js/rand.js"></script>
@@ -22,7 +22,7 @@
     <script type="text/javascript" src="flotr/lib/canvas2image.js"></script>
     <script type="text/javascript" src="flotr/lib/canvastext.js"></script>
     <script type="text/javascript" src="flotr/flotr.js"></script>
-    
+
     <!-- Table Utilities -->
     <link type="text/css" rel="stylesheet" href="table/table.css"/>
     <script type="text/javascript" src="table/fastinit.js"></script>
@@ -44,54 +44,70 @@
           window.console.log(obj);
         }
       }
-      
+
       function log(html) {
         document.getElementById('logDiv').innerHTML += html + '<br/><br/>'
       }
-      
+
       function logTitle(title) {
-        document.getElementById('logDiv').innerHTML += 
+        document.getElementById('logDiv').innerHTML +=
         '=============================================<br/>' +
         '<b>' + title + '</b><br/>' +
         '=============================================' + '<br/><br/>'
       }
-      
+
       function test(library, f, dataLogger) {
         // Repeats each benchmark multiple times to smooth out anomalies
         // Also tracks min and max times
-        
+
         if(!f) {
           log('<i>' + library + ': Unsupported</i>');
           dataLogger[library] = { avg: null, min: null, max: null };
           return;
         }
-        
+
         var runCount = 10;
-        var internalRunCount = 50000;
-        var totalTime = 0;
-        var minTime = 0;
-        var maxTime = 0;
+        var internalRunCount = 100;
+        var totalIterations = 0;
+        var minIterations = 0;
+        var maxIterations = 0;
+				var totalTime = 0;
+				var minTime = 0;
+				var maxTime = 0;
+				var timePerRun = 30;
         resetPseudoRandom();
 
         for(var i = 0; i < runCount; ++i) {
-          var data = f(internalRunCount);
-          var time = data.time;
+          var data = f(internalRunCount, -1, timePerRun);
+          var iterations = internalRunCount * data.loopCount;
+					var time = data.time;
           if(i == 0) {
-            minTime = time;
-            maxTime = time;
+            minIterations = iterations;
+            maxIterations = iterations;
+						minTime = time;
+						maxTime = time;
           } else {
-            if(minTime > time) { minTime = time; }
-            if(maxTime < time) { maxTime = time; }
+            if(minIterations > iterations) {
+						  minIterations = iterations;
+							minTime = time;
+						}
+            if(maxIterations < iterations) {
+						  maxIterations = iterations;
+							maxTime = time;
+						}
           }
-          totalTime += time;
+          totalIterations += iterations;
+					totalTime += time;
         }
-        
-        var avg = totalTime / runCount;
-        
-        log('<i>' + library + '</i> - Avg: <b>' + avg + 'ms</b>, Min: ' + minTime + 'ms, Max: ' + maxTime + 'ms');
-        
-        dataLogger[library] = { avg: avg, min: minTime, max: maxTime };
-        
+
+        var iterationsPerSecond = Math.floor(totalIterations / (totalTime * 0.001));
+				var minIterationsPerSecond = Math.floor(minIterations / (minTime * 0.001));
+				var maxIterationsPerSecond = Math.floor(maxIterations / (maxTime * 0.001));
+
+        log('<i>' + library + '</i> - Avg: <b>' + iterationsPerSecond + ' iterations per second</b>, Min: ' + minIterationsPerSecond + ' iterations per second, Max: ' + maxIterationsPerSecond + ' iterations per second');
+
+        dataLogger[library] = { avg: iterationsPerSecond, min: minIterationsPerSecond, max: maxIterationsPerSecond };
+
         return data.result;
       }
 
@@ -106,7 +122,7 @@
         var internalRunCount = 5;
         resetPseudoRandom();
 
-        var data = f(internalRunCount);
+        var data = f(internalRunCount, 1, 1000);
         return data.result;
       }
 
@@ -141,9 +157,9 @@
               testData[name][tests[i].library].bad = true;
             }
           }
-          plotBenchmarks(); 
-          updateTableData(); 
-          setTimeout(function() { 
+          plotBenchmarks();
+          updateTableData();
+          setTimeout(function() {
             runNextTest();
           }, 100);
         }, 1);
@@ -155,7 +171,7 @@
           runTestSet(set.name, set.tests);
         }
       }
-      
+
       var kEpsilon = 0.001;
       function Compare(a, b, pre) {
         if (b.m11) {
@@ -257,8 +273,8 @@
         return m;
       }
     </script>
-    
-    
+
+
     <style type="text/css">
       body {
         font: 0.8em Verdana,sans-serif;
@@ -270,12 +286,12 @@
   </head>
   <body>
     <p>
-      This page benchmarks the performance of several matrix libraries intended for use with WebGL: 
-      <a href="http://code.google.com/p/glmatrix/">glMatrix</a>, <a href="http://code.google.com/p/webgl-mjs/">mjs</a>, 
-      CanvasMatrix, <a href="http://code.google.com/p/ewgl-matrices/">EWGL_math</a>,  
-      <a href="http://code.google.com/p/threedlibrary/">tdl</a>, and 
+      This page benchmarks the performance of several matrix libraries intended for use with WebGL:
+      <a href="http://code.google.com/p/glmatrix/">glMatrix</a>, <a href="http://code.google.com/p/webgl-mjs/">mjs</a>,
+      CanvasMatrix, <a href="http://code.google.com/p/ewgl-matrices/">EWGL_math</a>,
+      <a href="http://code.google.com/p/threedlibrary/">tdl</a>, and
       <a href="http://closure-library.googlecode.com/">Google's Closure</a>.<br/>
-      Benchmark times are averaged over 10 runs of 50,000 iterations of the target operation.<br/>
+      Benchmarks test iterations per second of the target operation.<br/>
     </p>
     <div id="graph" style="width:900px;height:400px;margin:10px"></div>
     <div id="tablediv" style="font-size:85%;width:800px;margin:10px">
@@ -287,9 +303,9 @@
       </table>
     </div>
     <p><em>
-      Adapted by Stephen Bannasch from the benchmarks Brandon Jones created in his <a href=" https://glmatrix.googlecode.com/hg/">glmatrix library</a>.<br/> 
-      Additional improvements by Gregg Tavares.<br/>     
-      JavaScript Plotting library: <a href=" http://solutoire.com/flotr/">Flotr</a>; 
+      Adapted by Stephen Bannasch from the benchmarks Brandon Jones created in his <a href=" https://glmatrix.googlecode.com/hg/">glmatrix library</a>.<br/>
+      Additional improvements by Gregg Tavares.<br/>
+      JavaScript Plotting library: <a href=" http://solutoire.com/flotr/">Flotr</a>;
       <a href="http://tetlaw.id.au/view/blog/table-sorting-with-prototype/">Sortable Table</a> by Andrew Tetlaw.<br/>
       The source code for these benchmarks can be found here on <a href="https://github.com/stepheneb/webgl-matrix-benchmarks">github</a>. Pull requests quite welcome!<br/>
     </em></p>
@@ -299,546 +315,754 @@
     <!-- Benchmarks -->
     <script type="text/javascript">
       function testMain() {
-        
+
         testSet('Multiplication', [
-          { library: 'glMatrix', test: function(count) {
+          { library: 'glMatrix', test: function(count, maxCount, milliSeconds) {
             var m1 = glMatrixRandom();
             var m2 = glMatrixRandom();
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.multiply(m1, m2);
-            }
-            return {time: Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.multiply(m1, m2);
+							}
+						}
+            return {time: Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'mjs', test: function(count) {
+          { library: 'mjs', test: function(count, maxCount, milliSeconds) {
             var m1 = mjsRandom();
             var m2 = mjsRandom();
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              M4x4.mul(m1, m2, m1);
-            }
-            return {time: Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								M4x4.mul(m1, m2, m1);
+							}
+						}
+            return {time: Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'CanvasMatrix', test: function(count) {
+          { library: 'CanvasMatrix', test: function(count, maxCount, milliSeconds) {
             var m1 = canvasMatrixRandom();
             var m2 = canvasMatrixRandom();
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              m1.multLeft(m2);
-            }
-            return {time: Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								m1.multLeft(m2);
+							}
+						}
+            return {time: Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'EWGL', test: function(count) {
+          { library: 'EWGL', test: function(count, maxCount, milliSeconds) {
             var m1 = ewglMatrixRandom();
             var m2 = ewglMatrixRandom();
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              m1.x(m2);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								m1.x(m2);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'TDLMath', test: function(count) {
+          { library: 'TDLMath', test: function(count, maxCount, milliSeconds) {
             var m1 = tdlMathMatrixRandom();
             var m2 = tdlMathMatrixRandom();
             var mat4 = tdl.math.matrix4;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              m1 = mat4.mul(m2, m1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								m1 = mat4.mul(m2, m1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'TDLFast', test: function(count) {
+          { library: 'TDLFast', test: function(count, maxCount, milliSeconds) {
             var m1 = tdlFastMatrixRandom();
             var m2 = tdlFastMatrixRandom();
             var mat4 = tdl.fast.matrix4;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.mul(m1, m2, m1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.mul(m1, m2, m1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'closure', test: function(count) {
+          { library: 'closure', test: function(count, maxCount, milliSeconds) {
             var m1 = closureMatrixRandom();
             var m2 = closureMatrixRandom();
             var mat4 = goog.vec.Matrix4;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.multMat(m1, m2, m1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.multMat(m1, m2, m1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }}
         ]);
 
         testSet('Translation', [
-          { library: 'glMatrix', test: function(count) {
+          { library: 'glMatrix', test: function(count, maxCount, milliSeconds) {
             var m1 = glMatrixRandom();
             var v1 = vec3.create([1, 2, 3]);
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.translate(m1, v1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.translate(m1, v1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'mjs', test: function(count) {
+          { library: 'mjs', test: function(count, maxCount, milliSeconds) {
             var m1 = mjsRandom();
             var v1 = V3.$(1, 2, 3);
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              M4x4.translate(v1, m1, m1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								M4x4.translate(v1, m1, m1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'CanvasMatrix', test: function(count) {
+          { library: 'CanvasMatrix', test: function(count, maxCount, milliSeconds) {
             var m1 = new CanvasMatrix4();
             var m2 = canvasMatrixRandom();
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              m1.translate(1, 2, 3);
-            }
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								m1.translate(1, 2, 3);
+							}
+						}
             m1.multRight(m2);
-            return {time:Date.now()-start, result: m1};
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'EWGL', test: function(count) {
+          { library: 'EWGL', test: function(count, maxCount, milliSeconds) {
             var m1 = ewglMatrixRandom();
             var v1 = new v3([1, 2, 3]);
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              m1.translate(v1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								m1.translate(v1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'TDLMath', test: function(count) {
+          { library: 'TDLMath', test: function(count, maxCount, milliSeconds) {
             var m1 = tdlMathMatrixRandom();
             var v1 = [1, 2, 3];
             var start = Date.now();
             var mat4 = tdl.math.matrix4;
-            for (var i = 0; i < count; ++i) {
-              mat4.translate(m1, v1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.translate(m1, v1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'TDLFast', test: function(count) {
+          { library: 'TDLFast', test: function(count, maxCount, milliSeconds) {
             var m1 = tdlMathMatrixRandom();
             var v1 = new Float32Array([1, 2, 3]);
             var start = Date.now();
             var mat4 = tdl.fast.matrix4;
-            for (var i = 0; i < count; ++i) {
-              mat4.translate(m1, v1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.translate(m1, v1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'closure', test: function(count) {
+          { library: 'closure', test: function(count, maxCount, milliSeconds) {
             var m1 = closureMatrixRandom();
             var v1 = goog.vec.Vec3.createFromValues(1, 2, 3);
             var mat4 = goog.vec.Matrix4;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.applyTranslate(m1, v1[0], v1[1], v1[2]);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.applyTranslate(m1, v1[0], v1[1], v1[2]);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }}
         ]);
 
         testSet('Scaling', [
-          { library: 'glMatrix', test: function(count) {
+          { library: 'glMatrix', test: function(count, maxCount, milliSeconds) {
             var m1 = glMatrixRandom();
             var v1 = vec3.create([1, 2, 3]);
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.scale(m1, v1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.scale(m1, v1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'mjs', test: function(count) {
+          { library: 'mjs', test: function(count, maxCount, milliSeconds) {
             var m1 = mjsRandom();
             var v1 = V3.$(1, 2, 3);
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              M4x4.scale(v1, m1, m1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								M4x4.scale(v1, m1, m1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'CanvasMatrix', test: function(count) {
+          { library: 'CanvasMatrix', test: function(count, maxCount, milliSeconds) {
             var m1 = new CanvasMatrix4();
             var m2 = canvasMatrixRandom();
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              m1.scale(1, 2, 3);
-            }
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								m1.scale(1, 2, 3);
+							}
+						}
             m1.multRight(m2);
-            return {time:Date.now()-start, result: m1};
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'EWGL', test: function(count) {
+          { library: 'EWGL', test: function(count, maxCount, milliSeconds) {
             var m1 = ewglMatrixRandom();
             var v1 = new v3([1, 2, 3]);
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              m1.scale(v1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								m1.scale(v1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'TDLMath', test: function(count) {
+          { library: 'TDLMath', test: function(count, maxCount, milliSeconds) {
             var m1 = tdlMathMatrixRandom();
             var v1 = [1, 2, 3];
             var start = Date.now();
             var mat4 = tdl.math.matrix4;
-            for (var i = 0; i < count; ++i) {
-              mat4.scale(m1, v1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.scale(m1, v1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'TDLFast', test: function(count) {
+          { library: 'TDLFast', test: function(count, maxCount, milliSeconds) {
             var m1 = tdlMathMatrixRandom();
             var v1 = new Float32Array([1, 2, 3]);
             var start = Date.now();
             var mat4 = tdl.fast.matrix4;
-            for (var i = 0; i < count; ++i) {
-              mat4.scale(m1, v1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.scale(m1, v1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'closure', test: function(count) {
+          { library: 'closure', test: function(count, maxCount, milliSeconds) {
             var m1 = closureMatrixRandom();
             var v1 = goog.vec.Vec3.createFromValues(1, 2, 3);
             var mat4 = goog.vec.Matrix4;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.applyScale(m1, v1[0], v1[1], v1[2]);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.applyScale(m1, v1[0], v1[1], v1[2]);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }}
         ]);
 
         testSet('Rotation (Arbitrary axis)', [
-          { library: 'glMatrix', test: function(count) {
+          { library: 'glMatrix', test: function(count, maxCount, milliSeconds) {
             var m1 = glMatrixRandom();
             var v1 = vec3.create([1, 2, 3]);
             var a = Math.PI/2;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.rotate(m1, a, v1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.rotate(m1, a, v1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'mjs', test: function(count) {
+          { library: 'mjs', test: function(count, maxCount, milliSeconds) {
             var m1 = mjsRandom();
             var v1 = V3.$(1, 2, 3);
             var a = Math.PI/2;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              M4x4.rotate(a, v1, m1, m1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								M4x4.rotate(a, v1, m1, m1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'CanvasMatrix', test: function(count) {
+          { library: 'CanvasMatrix', test: function(count, maxCount, milliSeconds) {
             var m1 = new CanvasMatrix4();
             var m2 = canvasMatrixRandom();
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              m1.rotate(90, 1, 2, 3);
-            }
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								m1.rotate(90, 1, 2, 3);
+							}
+						}
             m1.multRight(m2);
-            return {time:Date.now()-start, result: m1};
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'EWGL', test: function(count) {
+          { library: 'EWGL', test: function(count, maxCount, milliSeconds) {
             var m1 = ewglMatrixRandom();
             var v1 = new v3([1, 2, 3]);
             var a = Math.PI/2;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              m1.rotate(a, v1, m1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								m1.rotate(a, v1, m1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'TDLMath', test: function(count) {
+          { library: 'TDLMath', test: function(count, maxCount, milliSeconds) {
             var m1 = tdlMathMatrixRandom();
             var v1 = tdl.math.normalize([1, 2, 3]);
             var mat4 = tdl.math.matrix4;
             var a = Math.PI/2;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.axisRotate(m1, v1, a);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.axisRotate(m1, v1, a);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'TDLFast', test: function(count) {
+          { library: 'TDLFast', test: function(count, maxCount, milliSeconds) {
             var m1 = tdlMathMatrixRandom();
             var v1 = new Float32Array([1, 2, 3]);
             tdl.fast.normalize(v1, v1);
             var mat4 = tdl.fast.matrix4;
             var a = Math.PI/2;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.axisRotate(m1, v1, a);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.axisRotate(m1, v1, a);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'closure', test: function(count) {
+          { library: 'closure', test: function(count, maxCount, milliSeconds) {
             var m1 = closureMatrixRandom();
             var v1 = goog.vec.Vec3.createFromValues(1, 2, 3);
             goog.vec.Vec3.normalize(v1, v1);
             var mat4 = goog.vec.Matrix4;
             var a = Math.PI/2;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.applyRotate(m1, a, v1[0], v1[1], v1[2]);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.applyRotate(m1, a, v1[0], v1[1], v1[2]);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }}
         ]);
 
         testSet('Rotation (X axis)', [
-          { library: 'glMatrix', test: function(count) {
+          { library: 'glMatrix', test: function(count, maxCount, milliSeconds) {
             var m1 = glMatrixRandom();
             var v1 = vec3.create([1, 0, 0]);
             var a = Math.PI/2;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.rotate(m1, a, v1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.rotate(m1, a, v1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'mjs', test: function(count) {
+          { library: 'mjs', test: function(count, maxCount, milliSeconds) {
             var m1 = mjsRandom();
             var v1 = V3.$(1, 0, 0);
             var a = Math.PI/2;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              M4x4.rotate(a, v1, m1, m1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								M4x4.rotate(a, v1, m1, m1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'CanvasMatrix', test: function(count) {
+          { library: 'CanvasMatrix', test: function(count, maxCount, milliSeconds) {
             var m1 = new CanvasMatrix4();
             var m2 = canvasMatrixRandom();
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              m1.rotate(90, 1, 0, 0);
-            }
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								m1.rotate(90, 1, 0, 0);
+							}
+						}
             m1.multRight(m2);
-            return {time:Date.now()-start, result: m1};
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'EWGL', test: function(count) {
+          { library: 'EWGL', test: function(count, maxCount, milliSeconds) {
             var m1 = ewglMatrixRandom();
             var v1 = new v3([1, 0, 0]);
             var a = Math.PI/2;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              m1.rotate(a, v1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								m1.rotate(a, v1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'TDLMath', test: function(count) {
+          { library: 'TDLMath', test: function(count, maxCount, milliSeconds) {
             var m1 = tdlMathMatrixRandom();
             var a = Math.PI/2;
             var mat4 = tdl.math.matrix4;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.rotateX(m1, a);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.rotateX(m1, a);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'TDLFast', test: function(count) {
+          { library: 'TDLFast', test: function(count, maxCount, milliSeconds) {
             var m1 = tdlMathMatrixRandom();
             var a = Math.PI/2;
             var mat4 = tdl.fast.matrix4;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.rotateX(m1, a);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.rotateX(m1, a);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'closure', test: function(count) {
+          { library: 'closure', test: function(count, maxCount, milliSeconds) {
             var m1 = closureMatrixRandom();
             var v1 = goog.vec.Vec3.createFromValues(1, 0, 0);
             var mat4 = goog.vec.Matrix4;
             var a = Math.PI/2;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.applyRotate(m1, a, v1[0], v1[1], v1[2]);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.applyRotate(m1, a, v1[0], v1[1], v1[2]);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }}
         ]);
 
         testSet('Transpose', [
-          { library: 'glMatrix', test: function(count) {
+          { library: 'glMatrix', test: function(count, maxCount, milliSeconds) {
             var m1 = glMatrixRandom();
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.transpose(m1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.transpose(m1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'mjs', test: function(count) {
+          { library: 'mjs', test: function(count, maxCount, milliSeconds) {
             var m1 = mjsRandom();
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              M4x4.transpose(m1, m1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								M4x4.transpose(m1, m1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'CanvasMatrix', test: function(count) {
+          { library: 'CanvasMatrix', test: function(count, maxCount, milliSeconds) {
             var m1 = canvasMatrixRandom();
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              m1.transpose();
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								m1.transpose();
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'EWGL', test: function(count) {
+          { library: 'EWGL', test: function(count, maxCount, milliSeconds) {
             var m1 = ewglMatrixRandom();
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              m1.transpose();
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								m1.transpose();
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'TDLMath', test: function(count) {
+          { library: 'TDLMath', test: function(count, maxCount, milliSeconds) {
             var m1 = tdlMathMatrixRandom();
             var mat4 = tdl.math.matrix4;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              m1 = mat4.transpose(m1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								m1 = mat4.transpose(m1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'TDLFast', test: function(count) {
+          { library: 'TDLFast', test: function(count, maxCount, milliSeconds) {
             var m1 = tdlMathMatrixRandom();
             var mat4 = tdl.fast.matrix4;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.transpose(m1, m1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.transpose(m1, m1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'closure', test: function(count) {
+          { library: 'closure', test: function(count, maxCount, milliSeconds) {
             var m1 = closureMatrixRandom();
             var mat4 = goog.vec.Matrix4;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.transpose(m1, m1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.transpose(m1, m1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }}
         ]);
 
         testSet('Inverse', [
-          { library: 'glMatrix', test: function(count) {
+          { library: 'glMatrix', test: function(count, maxCount, milliSeconds) {
             var m1 = mat4.perspective(90, 0.5, 1, 1000);
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.inverse(m1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.inverse(m1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'mjs', test: function(count) {
+          { library: 'mjs', test: function(count, maxCount, milliSeconds) {
            var m1 = M4x4.makePerspective(90, 0.5, 1, 1000);
            var start = Date.now();
-           for (var i = 0; i < count; ++i) {
-             M4x4.inverseOrthonormal(m1, m1);
-           }
-           return {time:Date.now()-start, result: m1};
+					 var loopCount = 0;
+					 while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+						 ++loopCount;
+						 for (var i = 0; i < count; ++i) {
+							 M4x4.inverseOrthonormal(m1, m1);
+						 }
+					 }
+           return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'CanvasMatrix', test: function(count) {
+          { library: 'CanvasMatrix', test: function(count, maxCount, milliSeconds) {
             var m1 = new CanvasMatrix4();
             m1.perspective(90, 0.5, 1, 1000);
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              m1.invert();
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								m1.invert();
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'EWGL', test: function(count) {
+          { library: 'EWGL', test: function(count, maxCount, milliSeconds) {
             var m1 = m4x4.makePerspective(90, 0.5, 1, 1000);
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              m1.inverse();
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								m1.inverse();
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'TDLMath', test: function(count) {
+          { library: 'TDLMath', test: function(count, maxCount, milliSeconds) {
             var mat4 = tdl.math.matrix4;
             var m1 = mat4.perspective(Math.PI/2, 0.5, 1, 1000);
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              m1 = mat4.inverse(m1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								m1 = mat4.inverse(m1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'TDLFast', test: function(count) {
+          { library: 'TDLFast', test: function(count, maxCount, milliSeconds) {
             var m1 = tdlMathMatrixRandom();
             var mat4 = tdl.fast.matrix4;
             mat4.perspective(m1, Math.PI/2, 0.5, 1, 1000);
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.inverse(m1, m1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.inverse(m1, m1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'closure', test: function(count) {
+          { library: 'closure', test: function(count, maxCount, milliSeconds) {
             var m1 = closureMatrixRandom();
             var mat4 = goog.vec.Matrix4;
             mat4.makePerspective(m1, Math.PI/2, 0.5, 1, 1000);
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.invert(m1, m1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.invert(m1, m1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }}
         ]);
 
         testSet('Inverse 3x3', [
-          { library: 'glMatrix', test: function(count) {
+          { library: 'glMatrix', test: function(count, maxCount, milliSeconds) {
             var m1 = glMatrixRandom();
             var res = mat3.create();
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.toInverseMat3(m1, res);
-              mat3.toMat4(res, m1);
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.toInverseMat3(m1, res);
+								mat3.toMat4(res, m1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
-          { library: 'mjs', test: function(count) {
+          { library: 'mjs', test: function(count, maxCount, milliSeconds) {
             var m1 = mjsRandom();
             var res = new MJS_FLOAT_ARRAY_TYPE(9);
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              M4x4.inverseTo3x3(m1, res);
-              m1[0] = res[0];
-              m1[1] = res[1];
-              m1[2] = res[2];
-              m1[3] = 0;
-              m1[4] = res[3];
-              m1[5] = res[4];
-              m1[6] = res[5];
-              m1[7] = 0;
-              m1[8] = res[6];
-              m1[9] = res[7];
-              m1[10] = res[8];
-              m1[11] = 0;
-              m1[12] = 0;
-              m1[13] = 0;
-              m1[14] = 0;
-              m1[15] = 1;              
-            }
-            return {time:Date.now()-start, result: m1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								M4x4.inverseTo3x3(m1, res);
+								m1[0] = res[0];
+								m1[1] = res[1];
+								m1[2] = res[2];
+								m1[3] = 0;
+								m1[4] = res[3];
+								m1[5] = res[4];
+								m1[6] = res[5];
+								m1[7] = 0;
+								m1[8] = res[6];
+								m1[9] = res[7];
+								m1[10] = res[8];
+								m1[11] = 0;
+								m1[12] = 0;
+								m1[13] = 0;
+								m1[14] = 0;
+								m1[15] = 1;
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
           }},
           { library: 'CanvasMatrix', test: null },
           { library: 'EWGL', test: null },
-          { library: 'TDLMath', test: function(count) {
+          { library: 'TDLMath', test: function(count, maxCount, milliSeconds) {
             var m1 = tdl.math.matrix4.getUpper3x3(tdlMathMatrixRandom());
             var math = tdl.math;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              m1 = math.inverse3(m1);
-            }
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								m1 = math.inverse3(m1);
+							}
+						}
             var m2 = tdl.math.matrix4.identity();
             tdl.math.matrix4.setUpper3x3(m2, m1);
-            return {time:Date.now()-start, result: m2};
+            return {time:Date.now()-start, loopCount: loopCount, result: m2};
           }},
           { library: 'TDLFast', test: null},
-          { library: 'closure', test: function(count) {
+          { library: 'closure', test: function(count, maxCount, milliSeconds) {
             var m1 = closureMatrixRandom();
             m1 = goog.vec.Matrix3.createFromValues(
                 m1[0], m1[1], m1[2],
@@ -846,62 +1070,78 @@
                 m1[8], m1[9], m1[10]);
             var mat3 = goog.vec.Matrix3;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat3.invert(m1, m1);
-            }
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat3.invert(m1, m1);
+							}
+						}
             var m2 = goog.vec.Matrix4.createFromValues(
                 m1[0], m1[1], m1[2], 0,
                 m1[3], m1[4], m1[5], 0,
                 m1[6], m1[7], m1[8], 0,
                 0, 0, 0, 1);
-            return {time:Date.now()-start, result: m2};
+            return {time:Date.now()-start, loopCount: loopCount, result: m2};
           }},
         ]);
 
         testSet('Vector Transformation', [
           { library: 'glMatrix', test: null},
-          { library: 'mjs', test: function(count) {
+          { library: 'mjs', test: function(count, maxCount, milliSeconds) {
             var m1 = mjsRandom();
             var v1 = V3.$(1, 2, 3);
             var v2 = V3.$();
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              V3.mul4x4(m1, v1, v2);
-              var t = v1;
-              v1 = v2;
-              v2 = t;
-            }
-            return {time:Date.now()-start, result: v1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								V3.mul4x4(m1, v1, v2);
+								var t = v1;
+								v1 = v2;
+								v2 = t;
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: v1};
           }},
           { library: 'CanvasMatrix', test: null },
           { library: 'EWGL', test: null },
-          { library: 'TDLMath', test: function(count) {
+          { library: 'TDLMath', test: function(count, maxCount, milliSeconds) {
             var m1 = tdlMathMatrixRandom();
             var v1 = [1, 2, 3];
             var mat4 = tdl.math.matrix4;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              v1 = mat4.transformPoint(m1, v1);
-            }
-            return {time:Date.now()-start, result: v1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								v1 = mat4.transformPoint(m1, v1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: v1};
           }},
           { library: 'TDLFast', test: null },
-          { library: 'closure', test: function(count) {
+          { library: 'closure', test: function(count, maxCount, milliSeconds) {
             var m1 = closureMatrixRandom();
             var v1 = goog.vec.Vec3.createFromValues(1, 2, 3);
             var mat4 = goog.vec.Matrix4;
             var start = Date.now();
-            for (var i = 0; i < count; ++i) {
-              mat4.multVec3Projective(m1, v1, v1);
-            }
-            return {time:Date.now()-start, result: v1};
+						var loopCount = 0;
+						while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+							++loopCount;
+							for (var i = 0; i < count; ++i) {
+								mat4.multVec3Projective(m1, v1, v1);
+							}
+						}
+            return {time:Date.now()-start, loopCount: loopCount, result: v1};
           }},
         ]);
 
         runNextTest();
       };
-      
-      
+
+
       function plotBenchmarks() {
           var datasets = [];
           var benchmarks = [];
@@ -927,18 +1167,18 @@
           for(i = 0; i < benchmarks.length; i++) {
             x_axis_tics.push([i, benchmarks[i]])
           }
-          var f = Flotr.draw($('graph'), datasets, 
+          var f = Flotr.draw($('graph'), datasets,
             {
-              xaxis:{ 
-                labelsAngle: 60, 
+              xaxis:{
+                labelsAngle: 60,
                 ticks: x_axis_tics,
-                title: 'Benchmark', 
+                title: 'Benchmark',
                 noTics: benchmarks.length,
                 min: 0, max: benchmarks.length - 1,
               },
-              yaxis:{ title: 'Time (ms)', min: 0, max: 75 },
+              yaxis:{ title: 'Iterations Per Second', min: 0, max: 10000000 },
               title: "WebGL Matrix Library Benchmark",
-              subtitle: "Averaged over 10 runs of 50,000 iterations.",
+              subtitle: "Averaged over 10 runs (higher is better)",
               grid:{ verticalLines: true, backgroundColor: 'white' },
               HtmlText: false,
               legend: { position: 'nw' },
@@ -949,7 +1189,7 @@
                 position: 'nw',
                 sensibility: 1, // => The smaller this value, the more precise you've to point
                 trackDecimals: 1,
-                trackFormatter: function(obj) { 
+                trackFormatter: function(obj) {
                   return obj.series.label + ':' + benchmarks[Number(obj.x)] +  ', ' + obj.y + 'ms'
                 }
               },
@@ -957,12 +1197,12 @@
             }
           );
       };
-      
+
       var data_table_head = document.getElementById("data-table-head");
       var data_table_body = document.getElementById("data-table-body");
 
       var libraries = ["glMatrix", "mjs", "CanvasMatrix", "EWGL", "TDLMath",  "TDLFast", "closure"];
-      
+
       function library_to_id(library) {
         return library.toLowerCase().replace(/\W/g, '_');
       }
@@ -981,12 +1221,12 @@
             row.appendChild(header);
           };
           header = document.createElement('th');
-          header.className = "number sortcol sortfirstasc";
+          header.className = "number sortcol sortfirstdesc";
           header.textContent = "Average";
           row.appendChild(header);
           data_table_head.deleteRow(0)
           data_table_head.appendChild(row);
-          
+
           for (i = 0; i < libraries.length; i++) {
             row = document.createElement('tr');
             row.id = libraries[i] + '_row';
@@ -1011,7 +1251,7 @@
         var row, data, value, totals = {}, counts = {};
         for(var benchmark in testData) {
           var bestLibraries;
-          var bestAverage = -1;
+          var bestIPS = -1;
           for (var library in testData[benchmark]) {
             data = document.getElementById(benchmark + '_' + library_to_id(library) + '_data');
             value = testData[benchmark][library].avg;
@@ -1023,15 +1263,15 @@
             if (typeof(value) === "number") {
                totals[library] = value + (totals[library] || 0);
                counts[library] = 1 + (counts[library] || 0);
-               if (bestAverage < 0 || value < bestAverage) {
-                 bestAverage = value;
+               if (bestIPS < 0 || value > bestIPS) {
+                 bestIPS = value;
                  bestLibraries = [library];
-               } else if (value == bestAverage) {
+               } else if (value == bestIPS) {
                  bestLibraries.push(library);
                }
             }
           }
-          if (bestAverage > 0) {
+          if (bestIPS > 0) {
             for (var i = 0; i < bestLibraries.length; ++i) {
               var library = bestLibraries[i];
               data = document.getElementById(benchmark + '_' + library_to_id(library) + '_data');
@@ -1047,7 +1287,7 @@
         }
         SortableTable.load();
       };
-      
+
     </script>
     <script type="text/javascript">
      window.onload=function() {
