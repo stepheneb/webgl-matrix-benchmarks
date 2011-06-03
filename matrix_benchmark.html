@@ -1141,7 +1141,21 @@
         runNextTest();
       };
 
-
+      var colors = [
+        '#ff0000',
+        '#4444ff',
+        '#00dd00',
+        '#cc00cc',
+        '#ee6600',
+        '#00ccbb',
+        '#990000',
+        '#110077',
+        '#118800',
+        '#770099',
+        '#aa4400',
+        '#008877'
+      ];
+      
       function plotBenchmarks() {
           var datasets = [];
           var benchmarks = [];
@@ -1156,6 +1170,7 @@
                 datasets.push({});
                 datasets[libraryIndex]['data'] = [];
                 datasets[libraryIndex]['label'] = library;
+                datasets[libraryIndex]['color'] = colors[libraryIndex];
                 datasets[libraryIndex]['lines'] = { show: true };
                 datasets[libraryIndex]['points'] = { show: true };
               }
@@ -1176,7 +1191,7 @@
                 noTics: benchmarks.length,
                 min: 0, max: benchmarks.length - 1,
               },
-              yaxis:{ title: 'Iterations Per Second (x1000000)', min: 0, max: 40 },
+              yaxis:{ title: 'Iterations Per Second (x1000000)', min: 0, max: 30 },
               title: "WebGL Matrix Library Benchmark",
               subtitle: "Millions of iterations per second averaged over 10 runs (higher is better)",
               grid:{ verticalLines: true, backgroundColor: 'white' },
@@ -1208,7 +1223,7 @@
       }
 
       function createTableData() {
-          var row, data, header;
+          var row, data, list, item, header;
           row = document.createElement('tr');
           header = document.createElement('th');
           header.className = "text sortcol";
@@ -1226,11 +1241,14 @@
           row.appendChild(header);
           data_table_head.deleteRow(0)
           data_table_head.appendChild(row);
-
           for (i = 0; i < libraries.length; i++) {
             row = document.createElement('tr');
             row.id = libraries[i] + '_row';
             data = document.createElement('td');
+            data.style.backgroundColor = colors[i];
+            data.style.color = '#ffffff';
+            data.style.fontWeight = 'normal';
+            data.style.fontFamily = 'Arial Black';
             data.textContent = libraries[i];
             row.appendChild(data);
             for(benchmark in testData) {
