@@ -291,7 +291,7 @@
       CanvasMatrix, <a href="http://code.google.com/p/ewgl-matrices/">EWGL_math</a>,
       <a href="http://code.google.com/p/threedlibrary/">tdl</a>, and
       <a href="http://closure-library.googlecode.com/">Google's Closure</a>.<br/>
-      Benchmarks test iterations per second of the target operation.<br/>
+      Benchmarks measure iterations per second of the target operation in units of one million.<br/>
     </p>
     <div id="graph" style="width:900px;height:400px;margin:10px"></div>
     <div id="tablediv" style="font-size:85%;width:800px;margin:10px">
@@ -1159,7 +1159,7 @@
                 datasets[libraryIndex]['lines'] = { show: true };
                 datasets[libraryIndex]['points'] = { show: true };
               }
-              datasets[libraryIndex]['data'].push([benchmarkIndex, testData[benchmark][library].avg]);
+              datasets[libraryIndex]['data'].push([benchmarkIndex, testData[benchmark][library].avg / 1000000]);
               libraryIndex++;
             }
             benchmarkIndex++;
@@ -1172,13 +1172,13 @@
               xaxis:{
                 labelsAngle: 60,
                 ticks: x_axis_tics,
-                title: 'Benchmark',
+                title: 'Benchmark Operation',
                 noTics: benchmarks.length,
                 min: 0, max: benchmarks.length - 1,
               },
-              yaxis:{ title: 'Iterations Per Second', min: 0, max: 10000000 },
+              yaxis:{ title: 'Iterations Per Second (x1000000)', min: 0, max: 40 },
               title: "WebGL Matrix Library Benchmark",
-              subtitle: "Averaged over 10 runs (higher is better)",
+              subtitle: "Millions of iterations per second averaged over 10 runs (higher is better)",
               grid:{ verticalLines: true, backgroundColor: 'white' },
               HtmlText: false,
               legend: { position: 'nw' },
@@ -1190,7 +1190,7 @@
                 sensibility: 1, // => The smaller this value, the more precise you've to point
                 trackDecimals: 1,
                 trackFormatter: function(obj) {
-                  return obj.series.label + ':' + benchmarks[Number(obj.x)] +  ', ' + obj.y + 'ms'
+                  return obj.series.label + ':' + benchmarks[Number(obj.x)] +  ', ' + obj.y
                 }
               },
               crosshair:{ mode: 'xy' }
@@ -1255,20 +1255,23 @@
           for (var library in testData[benchmark]) {
             data = document.getElementById(benchmark + '_' + library_to_id(library) + '_data');
             value = testData[benchmark][library].avg;
-            data.textContent = value;
-            if (testData[benchmark][library].bad) {
-              data.textContent += "(bad)";
-              data.style.backgroundColor = '#fcc';
-            }
             if (typeof(value) === "number") {
-               totals[library] = value + (totals[library] || 0);
-               counts[library] = 1 + (counts[library] || 0);
-               if (bestIPS < 0 || value > bestIPS) {
-                 bestIPS = value;
-                 bestLibraries = [library];
-               } else if (value == bestIPS) {
-                 bestLibraries.push(library);
-               }
+              value = value / 1000000;
+              data.textContent = sprintf("%2.2f", value);
+              totals[library] = value + (totals[library] || 0);
+              counts[library] = 1 + (counts[library] || 0);
+              if (bestIPS < 0 || value > bestIPS) {
+                bestIPS = value;
+                bestLibraries = [library];
+              } else if (value == bestIPS) {
+                bestLibraries.push(library);
+              }
+            } else {
+              data.textContent = value;
+            }
+            if (testData[benchmark][library].bad) {
+              data.textContent += " (bad)";
+              data.style.backgroundColor = '#fcc';
             }
           }
           if (bestIPS > 0) {
@@ -1282,7 +1285,7 @@
         for (var library in totals) {
           if (counts[library]) {
             data = document.getElementById(library_to_id(library) + '_ave__data');
-            data.textContent = sprintf("%3.1f", totals[library] / counts[library]);
+            data.textContent = sprintf("%2.2f", totals[library] / counts[library]);
           }
         }
         SortableTable.load();
