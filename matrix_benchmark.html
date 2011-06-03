@@ -173,7 +173,7 @@
       CanvasMatrix, <a href="http://code.google.com/p/ewgl-matrices/">EWGL_math</a>,
       <a href="http://code.google.com/p/threedlibrary/">tdl</a>, and
       <a href="http://closure-library.googlecode.com/">Google's Closure</a>.<br/>
-      Benchmarks measure iterations per second of the target operation in units of one million.<br/>
+      Benchmarks for each library are run in an iframe. Results measure millions of iterations per second of the target operation.<br/>
     </p>
     <div id="graph" style="width:900px;height:400px;margin:10px"></div>
     <div id="tablediv" style="font-size:85%;width:800px;margin:10px">
@@ -305,7 +305,7 @@
                 noTics: benchmarks.length,
                 min: 0, max: benchmarks.length - 1,
               },
-              yaxis:{ title: 'Iterations Per Second (x1000000)', min: 0, max: 30 },
+              yaxis:{ title: 'Iterations Per Second (x1000000)', min: 0, max: 40 },
               title: "WebGL Matrix Library Benchmark",
               subtitle: "Millions of iterations per second averaged over 10 runs (higher is better)",
               grid:{ verticalLines: true, backgroundColor: 'white' },
