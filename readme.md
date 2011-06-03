@@ -16,6 +16,7 @@ Comparing these matrix libraries:
 * CanvasMatrix
 * [EWGL_math](http://code.google.com/p/ewgl-matrices), [New BSD license](http://www.opensource.org/licenses/bsd-license.php)
 * [tdl](http://code.google.com/p/threedlibrary/), [New BSD license](http://www.opensource.org/licenses/bsd-license.php)
+* [Closure](http://closure-library.googlecode.com/) [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
 Changes from Brandon's original benchmark code include:
 
