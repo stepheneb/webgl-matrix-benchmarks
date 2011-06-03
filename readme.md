@@ -48,7 +48,7 @@ On Mac OS X start Chrome from the command line like this:
     cd /path/to/webgl-matrix-benchmarks
     python -m SimpleHTTPServer
 
-Open (http://localhost:8000/matrix_benchmark.html).
+Now open: <http://localhost:8000/matrix_benchmark.html>
 
 ### Set up an webgl-matrix-benchmarks.local local host and Apache vhost on Mac OS X
 
@@ -109,4 +109,4 @@ It might be necessary to flush the local DNS cache:
 
     $ sudo dscacheutil -flushcache
 
-Now open: (http://webgl-matrix-benchmarks.local/).
+Now open: <http://webgl-matrix-benchmarks.local/>
