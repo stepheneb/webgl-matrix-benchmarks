@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Matrix Benchmark</title>
+
+    <!-- Common Utilities -->
+    <script type="text/javascript" src="../../js/rand.js"></script>
+
+    <!-- Matrix Libraries -->
+    <script type="text/javascript" src="../../js/test-helper.js"></script>
+    <script type="text/javascript" src="EWGL_math.js"></script>
+
+    <!-- Benchmarking utilities -->
+    <script type="text/javascript">
+
+      window.onload = TestHelper.main;
+
+      // NOTE!!!!
+      // EWGL_math is OLD!!!!
+      window.WebGLFloatArray = window.Float32Array;
+
+      function ewglMatrixRandom() {
+        var m = new m4x4;
+        var axis = (new v3([pseudoRandom(), pseudoRandom(), pseudoRandom()])).normalize();
+        m.rotate(pseudoRandom(), axis);
+        m.translate(new v3([pseudoRandom(), pseudoRandom(), pseudoRandom()]));
+        return m;
+      }
+
+      var tests = {
+        'Multiplication':
+          { test: function(count, maxCount, milliSeconds) {
+            var m1 = ewglMatrixRandom();
+            var m2 = ewglMatrixRandom();
+            var start = Date.now();
+            var loopCount = 0;
+            while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+              ++loopCount;
+              for (var i = 0; i < count; ++i) {
+                m1.x(m2);
+              }
+            }
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
+          }},
+
+        'Translation':
+          { test: function(count, maxCount, milliSeconds) {
+            var m1 = ewglMatrixRandom();
+            var v1 = new v3([1, 2, 3]);
+            var start = Date.now();
+            var loopCount = 0;
+            while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+              ++loopCount;
+              for (var i = 0; i < count; ++i) {
+                m1.translate(v1);
+              }
+            }
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
+          }},
+
+        'Scaling':
+          { test: function(count, maxCount, milliSeconds) {
+            var m1 = ewglMatrixRandom();
+            var v1 = new v3([1, 2, 3]);
+            var start = Date.now();
+            var loopCount = 0;
+            while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+              ++loopCount;
+              for (var i = 0; i < count; ++i) {
+                m1.scale(v1);
+              }
+            }
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
+          }},
+
+        'Rotation (Arbitrary axis)':
+          { test: function(count, maxCount, milliSeconds) {
+            var m1 = ewglMatrixRandom();
+            var v1 = new v3([1, 2, 3]);
+            var a = Math.PI/2;
+            var start = Date.now();
+            var loopCount = 0;
+            while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+              ++loopCount;
+              for (var i = 0; i < count; ++i) {
+                m1.rotate(a, v1, m1);
+              }
+            }
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
+          }},
+
+        'Rotation (X axis)':
+          { test: function(count, maxCount, milliSeconds) {
+            var m1 = ewglMatrixRandom();
+            var v1 = new v3([1, 0, 0]);
+            var a = Math.PI/2;
+            var start = Date.now();
+            var loopCount = 0;
+            while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+              ++loopCount;
+              for (var i = 0; i < count; ++i) {
+                m1.rotate(a, v1);
+              }
+            }
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
+          }},
+
+        'Transpose':
+          { test: function(count, maxCount, milliSeconds) {
+            var m1 = ewglMatrixRandom();
+            var start = Date.now();
+            var loopCount = 0;
+            while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+              ++loopCount;
+              for (var i = 0; i < count; ++i) {
+                m1.transpose();
+              }
+            }
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
+          }},
+
+        'Inverse':
+          { test: function(count, maxCount, milliSeconds) {
+            var m1 = m4x4.makePerspective(90, 0.5, 1, 1000);
+            var start = Date.now();
+            var loopCount = 0;
+            while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+              ++loopCount;
+              for (var i = 0; i < count; ++i) {
+                m1.inverse();
+              }
+            }
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
+          }},
+
+        'Inverse 3x3':
+          { test: null },
+
+        'Vector Transformation':
+          { test: null },
+
+      };
+
+    </script>
+  </head>
+  <body>
+  </body>
+</html>

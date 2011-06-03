@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Matrix Benchmark</title>
+
+    <!-- Common Utilities -->
+    <script type="text/javascript" src="../../js/rand.js"></script>
+
+    <!-- Matrix Libraries -->
+    <script type="text/javascript" src="tdl/base.js"></script>
+
+    <!-- Benchmarking utilities -->
+    <script type="text/javascript" src="../../js/test-helper.js"></script>
+    <script type="text/javascript">
+      tdl.require('tdl.fast');
+      tdl.require('tdl.math');
+
+      window.onload = TestHelper.main;
+
+      function tdlFastMatrixRandom() {
+        var m = new Float32Array(16);
+        var axis = tdl.math.normalize([pseudoRandom(), pseudoRandom(), pseudoRandom()]);
+        tdl.fast.matrix4.identity(m);
+        tdl.fast.matrix4.axisRotate(m, axis, pseudoRandom());
+        tdl.fast.matrix4.translate(m, [pseudoRandom(), pseudoRandom(), pseudoRandom()]);
+        return m;
+      }
+
+      var tests = {
+        'Multiplication':
+          { test: function(count, maxCount, milliSeconds) {
+            var m1 = tdlFastMatrixRandom();
+            var m2 = tdlFastMatrixRandom();
+            var mat4 = tdl.fast.matrix4;
+            var start = Date.now();
+            var loopCount = 0;
+            while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+              ++loopCount;
+              for (var i = 0; i < count; ++i) {
+                mat4.mul(m1, m2, m1);
+              }
+            }
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
+          }},
+
+        'Translation':
+          { test: function(count, maxCount, milliSeconds) {
+            var m1 = tdlFastMatrixRandom();
+            var v1 = new Float32Array([1, 2, 3]);
+            var start = Date.now();
+            var mat4 = tdl.fast.matrix4;
+            var loopCount = 0;
+            while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+              ++loopCount;
+              for (var i = 0; i < count; ++i) {
+                mat4.translate(m1, v1);
+              }
+            }
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
+          }},
+
+        'Scaling':
+          { test: function(count, maxCount, milliSeconds) {
+            var m1 = tdlFastMatrixRandom();
+            var v1 = new Float32Array([1, 2, 3]);
+            var start = Date.now();
+            var mat4 = tdl.fast.matrix4;
+            var loopCount = 0;
+            while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+              ++loopCount;
+              for (var i = 0; i < count; ++i) {
+                mat4.scale(m1, v1);
+              }
+            }
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
+          }},
+
+        'Rotation (Arbitrary axis)':
+          { test: function(count, maxCount, milliSeconds) {
+            var m1 = tdlFastMatrixRandom();
+            var v1 = new Float32Array([1, 2, 3]);
+            tdl.fast.normalize(v1, v1);
+            var mat4 = tdl.fast.matrix4;
+            var a = Math.PI/2;
+            var start = Date.now();
+            var loopCount = 0;
+            while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+              ++loopCount;
+              for (var i = 0; i < count; ++i) {
+                mat4.axisRotate(m1, v1, a);
+              }
+            }
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
+          }},
+
+        'Rotation (X axis)':
+          { test: function(count, maxCount, milliSeconds) {
+            var m1 = tdlFastMatrixRandom();
+            var a = Math.PI/2;
+            var mat4 = tdl.fast.matrix4;
+            var start = Date.now();
+            var loopCount = 0;
+            while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+              ++loopCount;
+              for (var i = 0; i < count; ++i) {
+                mat4.rotateX(m1, a);
+              }
+            }
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
+          }},
+
+        'Transpose':
+          { test: function(count, maxCount, milliSeconds) {
+            var m1 = tdlFastMatrixRandom();
+            var mat4 = tdl.fast.matrix4;
+            var start = Date.now();
+            var loopCount = 0;
+            while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+              ++loopCount;
+              for (var i = 0; i < count; ++i) {
+                mat4.transpose(m1, m1);
+              }
+            }
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
+          }},
+
+        'Inverse':
+          { test: function(count, maxCount, milliSeconds) {
+            var m1 = tdlFastMatrixRandom();
+            var mat4 = tdl.fast.matrix4;
+            mat4.perspective(m1, Math.PI/2, 0.5, 1, 1000);
+            var start = Date.now();
+            var loopCount = 0;
+            while (Date.now() - start < milliSeconds && loopCount != maxCount) {
+              ++loopCount;
+              for (var i = 0; i < count; ++i) {
+                mat4.inverse(m1, m1);
+              }
+            }
+            return {time:Date.now()-start, loopCount: loopCount, result: m1};
+          }},
+
+        'Vector Transformation':
+          { test: null }
+
+      };
+
+    </script>
+  </head>
+  <body>
+  </body>
+</html>
