@@ -79,21 +79,13 @@ Edit the virtual hosting configuration file `/private/etc/apache2/extra/httpd-vh
       </Directory>
     </VirtualHost>
 
-    # after making changes ...
-    # testing the config: apachectl configtest
-    # restarting apache: sudo apachectl restart
-    # or tailing the general apache2 error log
-    # tail -n 200 -f /var/log/apache2/error_log[smartgraphs-git ruby-1.9.2-p180 (master)]$ 
-    
-after making changes ...
+after making changes test the config: `apachectl configtest` 
 
-- test the config: `apachectl configtest` 
+When the configuration syntax is correct restart apache:  `sudo apachectl restart`
 
-When the configuration syntax is correct ...
- 
-- restart apache:  `sudo apachectl restart`
+If there are issues try tailing the general apache2 error log: `tail -n 200 -f /var/log/apache2/error_log`
 
-(For more instructions, set <http://shapeshed.com/journal/setting_up_local_websites_on_snow_leopard/>.)
+For more instructions, set <http://shapeshed.com/journal/setting_up_local_websites_on_snow_leopard/>.
 
 And, finally, edit your `/etc/hosts` file to include the following line:
 
