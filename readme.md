@@ -94,7 +94,7 @@ And, finally, edit your `/etc/hosts` file to include the following line:
 Confirm that the new entry works:
 
     $ dscacheutil -q host -a name webgl-matrix-benchmarks.local
-    name: sc.local
+    name: webgl-matrix-benchmarks.local
     ip_address: 127.0.0.1
 
 It might be necessary to flush the local DNS cache:
