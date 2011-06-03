@@ -1,10 +1,10 @@
 /* 
  * glMatrix.js - High performance matrix and vector operations for WebGL
- * version 0.9.5
+ * version 0.9.6
  */
  
 /*
- * Copyright (c) 2010 Brandon Jones
+ * Copyright (c) 2011 Brandon Jones
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -306,6 +306,29 @@ vec3.direction = function(vec, vec2, dest) {
 };
 
 /*
+ * vec3.lerp
+ * Performs a linear interpolation between two vec3
+ *
+ * Params:
+ * vec - vec3, first vector
+ * vec2 - vec3, second vector
+ * lerp - interpolation amount between the two inputs
+ * dest - Optional, vec3 receiving operation result. If not specified result is written to vec
+ *
+ * Returns:
+ * dest if specified, vec otherwise
+ */
+vec3.lerp = function(vec, vec2, lerp, dest){
+    if(!dest) { dest = vec; }
+    
+    dest[0] = vec[0] + lerp * (vec2[0] - vec[0]);
+    dest[1] = vec[1] + lerp * (vec2[1] - vec[1]);
+    dest[2] = vec[2] + lerp * (vec2[2] - vec[2]);
+    
+    return dest;
+}
+
+/*
  * vec3.str
  * Returns a string representation of a vector
  *
@@ -348,7 +371,6 @@ mat3.create = function(mat) {
 		dest[6] = mat[6];
 		dest[7] = mat[7];
 		dest[8] = mat[8];
-		dest[9] = mat[9];
 	}
 	
 	return dest;
@@ -398,6 +420,44 @@ mat3.identity = function(dest) {
 	dest[6] = 0;
 	dest[7] = 0;
 	dest[8] = 1;
+	return dest;
+};
+
+/*
+ * mat4.transpose
+ * Transposes a mat3 (flips the values over the diagonal)
+ *
+ * Params:
+ * mat - mat3 to transpose
+ * dest - Optional, mat3 receiving transposed values. If not specified result is written to mat
+ *
+ * Returns:
+ * dest is specified, mat otherwise
+ */
+mat3.transpose = function(mat, dest) {
+	// If we are transposing ourselves we can skip a few steps but have to cache some values
+	if(!dest || mat == dest) { 
+		var a01 = mat[1], a02 = mat[2];
+		var a12 = mat[5];
+		
+        mat[1] = mat[3];
+        mat[2] = mat[6];
+        mat[3] = a01;
+        mat[5] = mat[7];
+        mat[6] = a02;
+        mat[7] = a12;
+		return mat;
+	}
+	
+	dest[0] = mat[0];
+	dest[1] = mat[3];
+	dest[2] = mat[6];
+	dest[3] = mat[1];
+	dest[4] = mat[4];
+	dest[5] = mat[7];
+	dest[6] = mat[2];
+	dest[7] = mat[5];
+	dest[8] = mat[8];
 	return dest;
 };
 
@@ -882,7 +942,7 @@ mat4.multiplyVec4 = function(mat, vec, dest) {
 	dest[0] = mat[0]*x + mat[4]*y + mat[8]*z + mat[12]*w;
 	dest[1] = mat[1]*x + mat[5]*y + mat[9]*z + mat[13]*w;
 	dest[2] = mat[2]*x + mat[6]*y + mat[10]*z + mat[14]*w;
-	dest[4] = mat[4]*x + mat[7]*y + mat[11]*z + mat[15]*w;
+	dest[3] = mat[3]*x + mat[7]*y + mat[11]*z + mat[15]*w;
 	
 	return dest;
 };
@@ -1487,9 +1547,9 @@ quat4.calculateW = function(quat, dest) {
  */
 quat4.inverse = function(quat, dest) {
 	if(!dest || quat == dest) {
-		quat[0] *= 1;
-		quat[1] *= 1;
-		quat[2] *= 1;
+		quat[0] *= -1;
+		quat[1] *= -1;
+		quat[2] *= -1;
 		return quat;
 	}
 	dest[0] = -quat[0];
@@ -1708,6 +1768,57 @@ quat4.toMat4 = function(quat, dest) {
 }
 
 /*
+ * quat4.slerp
+ * Performs a spherical linear interpolation between two quat4
+ *
+ * Params:
+ * quat - quat4, first quaternion
+ * quat2 - quat4, second quaternion
+ * slerp - interpolation amount between the two inputs
+ * dest - Optional, quat4 receiving operation result. If not specified result is written to quat
+ *
+ * Returns:
+ * dest if specified, quat otherwise
+ */
+quat4.slerp = function(quat, quat2, slerp, dest) {
+    if(!dest) { dest = quat; }
+    
+	var cosHalfTheta =  quat[0]*quat2[0] + quat[1]*quat2[1] + quat[2]*quat2[2] + quat[3]*quat2[3];
+	
+	if (Math.abs(cosHalfTheta) >= 1.0){
+	    if(dest != quat) {
+		    dest[0] = quat[0];
+		    dest[1] = quat[1];
+		    dest[2] = quat[2];
+		    dest[3] = quat[3];
+		}
+		return dest;
+	}
+	
+	var halfTheta = Math.acos(cosHalfTheta);
+	var sinHalfTheta = Math.sqrt(1.0 - cosHalfTheta*cosHalfTheta);
+
+	if (Math.abs(sinHalfTheta) < 0.001){
+		dest[0] = (quat[0]*0.5 + quat2[0]*0.5);
+		dest[1] = (quat[1]*0.5 + quat2[1]*0.5);
+		dest[2] = (quat[2]*0.5 + quat2[2]*0.5);
+		dest[3] = (quat[3]*0.5 + quat2[3]*0.5);
+		return dest;
+	}
+	
+	var ratioA = Math.sin((1 - slerp)*halfTheta) / sinHalfTheta;
+	var ratioB = Math.sin(slerp*halfTheta) / sinHalfTheta; 
+	
+	dest[0] = (quat[0]*ratioA + quat2[0]*ratioB);
+	dest[1] = (quat[1]*ratioA + quat2[1]*ratioB);
+	dest[2] = (quat[2]*ratioA + quat2[2]*ratioB);
+	dest[3] = (quat[3]*ratioA + quat2[3]*ratioB);
+	
+	return dest;
+}
+
+
+/*
  * quat4.str
  * Returns a string representation of a quaternion
  *
@@ -1719,5 +1830,5 @@ quat4.toMat4 = function(quat, dest) {
  */
 quat4.str = function(quat) {
 	return '[' + quat[0] + ', ' + quat[1] + ', ' + quat[2] + ', ' + quat[3] + ']'; 
-};
+}
 
