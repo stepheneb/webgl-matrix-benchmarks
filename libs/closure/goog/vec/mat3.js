@@ -13,8 +13,7 @@
 // limitations under the License.
 
 /**
- * @fileoverview WARNING: DEPRECATED.  Use Mat3 instead.
- * Implements 3x3 matrices and their related functions which are
+ * @fileoverview Implements 3x3 matrices and their related functions which are
  * compatible with WebGL. The API is structured to avoid unnecessary memory
  * allocations.  The last parameter will typically be the output vector and
  * an object can be both an input and output parameter to all methods except
@@ -22,25 +21,44 @@
  * vectors as follows: resultVec = matrix * vec.
  *
  */
-goog.provide('goog.vec.Matrix3');
+goog.provide('goog.vec.Mat3');
 
 goog.require('goog.vec');
+goog.require('goog.vec.Vec3');
 
 
 /**
+ * Type used when an argument can be either an array of numbers or a
+ * typed float32 array. This allows using the class on normal js arrays too.
+ * E.g. the following code is perfectly valid:
+ * <pre>
+ * var matA = new Array(9);
+ * var matB = goog.vec.Mat3.create();
+ * goog.vec.Mat3.makeIdentity(matA);
+ * goog.vec.Mat3.makeIdentity(matB);
+ * goog.vec.Mat3.multMat(matA, matB, matA);
+ * </pre>
+ * Note that matA is a double precision matrix (doubles), while matB is a
+ * single precision matrix (floats).
  * @typedef {goog.vec.ArrayType}
  */
-goog.vec.Matrix3.Type;
+goog.vec.Mat3.Mat3Like;
+
+
+/**
+ * @typedef {Float32Array}
+ */
+goog.vec.Mat3.Type;
 
 
 /**
  * Creates the array representation of a 3x3 matrix. The use of the array
- * directly eliminates any overhead associated with the class representation
- * defined above. The returned matrix is cleared to all zeros.
+ * directly instead of a class reduces overhead.
+ * The returned matrix is cleared to all zeros.
  *
- * @return {goog.vec.Matrix3.Type} The new, nine element array.
+ * @return {!goog.vec.Mat3.Type} The new, nine element array.
  */
-goog.vec.Matrix3.create = function() {
+goog.vec.Mat3.create = function() {
   return new Float32Array(9);
 };
 
@@ -50,10 +68,10 @@ goog.vec.Matrix3.create = function() {
  * directly eliminates any overhead associated with the class representation
  * defined above. The returned matrix is initialized with the identity.
  *
- * @return {goog.vec.Matrix3.Type} The new, nine element array.
+ * @return {!goog.vec.Mat3.Type} The new, nine element array.
  */
-goog.vec.Matrix3.createIdentity = function() {
-  var mat = goog.vec.Matrix3.create();
+goog.vec.Mat3.createIdentity = function() {
+  var mat = goog.vec.Mat3.create();
   mat[0] = mat[4] = mat[8] = 1;
   return mat;
 };
@@ -62,13 +80,13 @@ goog.vec.Matrix3.createIdentity = function() {
 /**
  * Creates a 3x3 matrix initialized from the given array.
  *
- * @param {goog.vec.ArrayType} matrix The array containing the
+ * @param {goog.vec.Mat3.Mat3Like} matrix The array containing the
  *     matrix values in column major order.
- * @return {goog.vec.Matrix3.Type} The new, nine element array.
+ * @return {!goog.vec.Mat3.Type} The new, nine element array.
  */
-goog.vec.Matrix3.createFromArray = function(matrix) {
-  var newMatrix = goog.vec.Matrix3.create();
-  goog.vec.Matrix3.setFromArray(newMatrix, matrix);
+goog.vec.Mat3.createFromArray = function(matrix) {
+  var newMatrix = goog.vec.Mat3.create();
+  goog.vec.Mat3.setFromArray(newMatrix, matrix);
   return newMatrix;
 };
 
@@ -85,12 +103,12 @@ goog.vec.Matrix3.createFromArray = function(matrix) {
  * @param {number} v02 The values at (0, 2).
  * @param {number} v12 The values at (1, 2).
  * @param {number} v22 The values at (2, 2).
- * @return {goog.vec.Matrix3.Type} The new, nine element array.
+ * @return {!goog.vec.Mat3.Type} The new, nine element array.
  */
-goog.vec.Matrix3.createFromValues = function(
+goog.vec.Mat3.createFromValues = function(
     v00, v10, v20, v01, v11, v21, v02, v12, v22) {
-  var newMatrix = goog.vec.Matrix3.create();
-  goog.vec.Matrix3.setFromValues(
+  var newMatrix = goog.vec.Mat3.create();
+  goog.vec.Mat3.setFromValues(
       newMatrix, v00, v10, v20, v01, v11, v21, v02, v12, v22);
   return newMatrix;
 };
@@ -99,23 +117,22 @@ goog.vec.Matrix3.createFromValues = function(
 /**
  * Creates a clone of a 3x3 matrix.
  *
- * @param {goog.vec.Matrix3.Type} matrix The source 3x3 matrix.
- * @return {goog.vec.Matrix3.Type} The new 3x3 element matrix.
+ * @param {goog.vec.Mat3.Mat3Like} matrix The source 3x3 matrix.
+ * @return {!goog.vec.Mat3.Type} The new 3x3 element matrix.
  */
-goog.vec.Matrix3.clone =
-    goog.vec.Matrix3.createFromArray;
+goog.vec.Mat3.clone = goog.vec.Mat3.createFromArray;
 
 
 /**
  * Retrieves the element at the requested row and column.
  *
- * @param {goog.vec.ArrayType} mat The matrix containing the
- *     value to retrieve.
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix containing the value to
+ *     retrieve.
  * @param {number} row The row index.
  * @param {number} column The column index.
  * @return {number} The element value at the requested row, column indices.
  */
-goog.vec.Matrix3.getElement = function(mat, row, column) {
+goog.vec.Mat3.getElement = function(mat, row, column) {
   return mat[row + column * 3];
 };
 
@@ -123,13 +140,13 @@ goog.vec.Matrix3.getElement = function(mat, row, column) {
 /**
  * Sets the element at the requested row and column.
  *
- * @param {goog.vec.ArrayType} mat The matrix containing the
- *     value to retrieve.
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix containing the value to
+ *     retrieve.
  * @param {number} row The row index.
  * @param {number} column The column index.
  * @param {number} value The value to set at the requested row, column.
  */
-goog.vec.Matrix3.setElement = function(mat, row, column, value) {
+goog.vec.Mat3.setElement = function(mat, row, column, value) {
   mat[row + column * 3] = value;
 };
 
@@ -138,7 +155,7 @@ goog.vec.Matrix3.setElement = function(mat, row, column, value) {
  * Initializes the matrix from the set of values. Note the values supplied are
  * in column major order.
  *
- * @param {goog.vec.ArrayType} mat The matrix to receive the
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix to receive the
  *     values.
  * @param {number} v00 The values at (0, 0).
  * @param {number} v10 The values at (1, 0).
@@ -150,7 +167,7 @@ goog.vec.Matrix3.setElement = function(mat, row, column, value) {
  * @param {number} v12 The values at (1, 2).
  * @param {number} v22 The values at (2, 2).
  */
-goog.vec.Matrix3.setFromValues = function(
+goog.vec.Mat3.setFromValues = function(
     mat, v00, v10, v20, v01, v11, v21, v02, v12, v22) {
   mat[0] = v00;
   mat[1] = v10;
@@ -167,12 +184,11 @@ goog.vec.Matrix3.setFromValues = function(
 /**
  * Sets the matrix from the array of values stored in column major order.
  *
- * @param {goog.vec.ArrayType} mat The matrix to receive the
- *     values.
- * @param {goog.vec.ArrayType} values The column major ordered
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix to receive the values.
+ * @param {goog.vec.Mat3.Mat3Like} values The column major ordered
  *     array of values to store in the matrix.
  */
-goog.vec.Matrix3.setFromArray = function(mat, values) {
+goog.vec.Mat3.setFromArray = function(mat, values) {
   mat[0] = values[0];
   mat[1] = values[1];
   mat[2] = values[2];
@@ -188,12 +204,11 @@ goog.vec.Matrix3.setFromArray = function(mat, values) {
 /**
  * Sets the matrix from the array of values stored in row major order.
  *
- * @param {goog.vec.ArrayType} mat The matrix to receive the
- *     values.
- * @param {goog.vec.ArrayType} values The row major ordered array
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix to receive the values.
+ * @param {goog.vec.Mat3.Mat3Like} values The row major ordered array
  *     of values to store in the matrix.
  */
-goog.vec.Matrix3.setFromRowMajorArray = function(mat, values) {
+goog.vec.Mat3.setFromRowMajorArray = function(mat, values) {
   mat[0] = values[0];
   mat[1] = values[3];
   mat[2] = values[6];
@@ -209,13 +224,12 @@ goog.vec.Matrix3.setFromRowMajorArray = function(mat, values) {
 /**
  * Sets the diagonal values of the matrix from the given values.
  *
- * @param {goog.vec.ArrayType} mat The matrix to receive the
- *     values.
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix to receive the values.
  * @param {number} v00 The values for (0, 0).
  * @param {number} v11 The values for (1, 1).
  * @param {number} v22 The values for (2, 2).
  */
-goog.vec.Matrix3.setDiagonalValues = function(mat, v00, v11, v22) {
+goog.vec.Mat3.setDiagonalValues = function(mat, v00, v11, v22) {
   mat[0] = v00;
   mat[4] = v11;
   mat[8] = v22;
@@ -225,12 +239,10 @@ goog.vec.Matrix3.setDiagonalValues = function(mat, v00, v11, v22) {
 /**
  * Sets the diagonal values of the matrix from the given vector.
  *
- * @param {goog.vec.ArrayType} mat The matrix to receive the
- *     values.
- * @param {goog.vec.ArrayType} vec The vector containing the
- *     values.
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix to receive the values.
+ * @param {goog.vec.Vec3.Vec3Like} vec The vector containing the values.
  */
-goog.vec.Matrix3.setDiagonal = function(mat, vec) {
+goog.vec.Mat3.setDiagonal = function(mat, vec) {
   mat[0] = vec[0];
   mat[4] = vec[1];
   mat[8] = vec[2];
@@ -240,15 +252,13 @@ goog.vec.Matrix3.setDiagonal = function(mat, vec) {
 /**
  * Sets the specified column with the supplied values.
  *
- * @param {goog.vec.ArrayType} mat The matrix to recieve the
- *     values.
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix to recieve the values.
  * @param {number} column The column index to set the values on.
  * @param {number} v0 The value for row 0.
  * @param {number} v1 The value for row 1.
  * @param {number} v2 The value for row 2.
  */
-goog.vec.Matrix3.setColumnValues = function(
-    mat, column, v0, v1, v2) {
+goog.vec.Mat3.setColumnValues = function(mat, column, v0, v1, v2) {
   var i = column * 3;
   mat[i] = v0;
   mat[i + 1] = v1;
@@ -259,13 +269,11 @@ goog.vec.Matrix3.setColumnValues = function(
 /**
  * Sets the specified column with the value from the supplied array.
  *
- * @param {goog.vec.ArrayType} mat The matrix to receive the
- *     values.
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix to receive the values.
  * @param {number} column The column index to set the values on.
- * @param {goog.vec.ArrayType} vec The vector elements for the
- *     column.
+ * @param {goog.vec.Vec3.Vec3Like} vec The vector elements for the column.
  */
-goog.vec.Matrix3.setColumn = function(mat, column, vec) {
+goog.vec.Mat3.setColumn = function(mat, column, vec) {
   var i = column * 3;
   mat[i] = vec[0];
   mat[i + 1] = vec[1];
@@ -277,13 +285,12 @@ goog.vec.Matrix3.setColumn = function(mat, column, vec) {
  * Retrieves the specified column from the matrix into the given vector
  * array.
  *
- * @param {goog.vec.ArrayType} mat The matrix supplying the
- *     values.
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix supplying the values.
  * @param {number} column The column to get the values from.
- * @param {goog.vec.ArrayType} vec The vector elements to receive
- *     the column.
+ * @param {goog.vec.Vec3.Vec3Like} vec The vector elements to receive the
+ *     column.
  */
-goog.vec.Matrix3.getColumn = function(mat, column, vec) {
+goog.vec.Mat3.getColumn = function(mat, column, vec) {
   var i = column * 3;
   vec[0] = mat[i];
   vec[1] = mat[i + 1];
@@ -294,17 +301,15 @@ goog.vec.Matrix3.getColumn = function(mat, column, vec) {
 /**
  * Sets the columns of the matrix from the set of vector elements.
  *
- * @param {goog.vec.ArrayType} mat The matrix to receive the
- *     values.
- * @param {goog.vec.ArrayType} vec0 The values for column 0.
- * @param {goog.vec.ArrayType} vec1 The values for column 1.
- * @param {goog.vec.ArrayType} vec2 The values for column 2.
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix to receive the values.
+ * @param {goog.vec.Vec3.Vec3Like} vec0 The values for column 0.
+ * @param {goog.vec.Vec3.Vec3Like} vec1 The values for column 1.
+ * @param {goog.vec.Vec3.Vec3Like} vec2 The values for column 2.
  */
-goog.vec.Matrix3.setColumns = function(
-    mat, vec0, vec1, vec2) {
-  goog.vec.Matrix3.setColumn(mat, 0, vec0);
-  goog.vec.Matrix3.setColumn(mat, 1, vec1);
-  goog.vec.Matrix3.setColumn(mat, 2, vec2);
+goog.vec.Mat3.setColumns = function(mat, vec0, vec1, vec2) {
+  goog.vec.Mat3.setColumn(mat, 0, vec0);
+  goog.vec.Mat3.setColumn(mat, 1, vec1);
+  goog.vec.Mat3.setColumn(mat, 2, vec2);
 };
 
 
@@ -312,34 +317,28 @@ goog.vec.Matrix3.setColumns = function(
  * Retrieves the column values from the given matrix into the given vector
  * elements.
  *
- * @param {goog.vec.ArrayType} mat The matrix containing the
- *     columns to retrieve.
- * @param {goog.vec.ArrayType} vec0 The vector elements to receive
- *     column 0.
- * @param {goog.vec.ArrayType} vec1 The vector elements to receive
- *     column 1.
- * @param {goog.vec.ArrayType} vec2 The vector elements to receive
- *     column 2.
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix supplying the columns.
+ * @param {goog.vec.Vec3.Vec3Like} vec0 The vector to receive column 0.
+ * @param {goog.vec.Vec3.Vec3Like} vec1 The vector to receive column 1.
+ * @param {goog.vec.Vec3.Vec3Like} vec2 The vector to receive column 2.
  */
-goog.vec.Matrix3.getColumns = function(
-    mat, vec0, vec1, vec2) {
-  goog.vec.Matrix3.getColumn(mat, 0, vec0);
-  goog.vec.Matrix3.getColumn(mat, 1, vec1);
-  goog.vec.Matrix3.getColumn(mat, 2, vec2);
+goog.vec.Mat3.getColumns = function(mat, vec0, vec1, vec2) {
+  goog.vec.Mat3.getColumn(mat, 0, vec0);
+  goog.vec.Mat3.getColumn(mat, 1, vec1);
+  goog.vec.Mat3.getColumn(mat, 2, vec2);
 };
 
 
 /**
  * Sets the row values from the supplied values.
  *
- * @param {goog.vec.ArrayType} mat The matrix to receive the
- *     values.
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix to receive the values.
  * @param {number} row The index of the row to receive the values.
  * @param {number} v0 The value for column 0.
  * @param {number} v1 The value for column 1.
  * @param {number} v2 The value for column 2.
  */
-goog.vec.Matrix3.setRowValues = function(mat, row, v0, v1, v2) {
+goog.vec.Mat3.setRowValues = function(mat, row, v0, v1, v2) {
   mat[row] = v0;
   mat[row + 3] = v1;
   mat[row + 6] = v2;
@@ -349,12 +348,11 @@ goog.vec.Matrix3.setRowValues = function(mat, row, v0, v1, v2) {
 /**
  * Sets the row values from the supplied vector.
  *
- * @param {goog.vec.ArrayType} mat The matrix to receive the
- *     row values.
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix to receive the row values.
  * @param {number} row The index of the row.
- * @param {goog.vec.ArrayType} vec The vector containing the values.
+ * @param {goog.vec.Vec3.Vec3Like} vec The vector containing the values.
  */
-goog.vec.Matrix3.setRow = function(mat, row, vec) {
+goog.vec.Mat3.setRow = function(mat, row, vec) {
   mat[row] = vec[0];
   mat[row + 3] = vec[1];
   mat[row + 6] = vec[2];
@@ -364,12 +362,11 @@ goog.vec.Matrix3.setRow = function(mat, row, vec) {
 /**
  * Retrieves the row values into the given vector.
  *
- * @param {goog.vec.ArrayType} mat The matrix supplying the
- *     values.
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix supplying the values.
  * @param {number} row The index of the row supplying the values.
- * @param {goog.vec.ArrayType} vec The vector to receive the row.
+ * @param {goog.vec.Vec3.Vec3Like} vec The vector to receive the row.
  */
-goog.vec.Matrix3.getRow = function(mat, row, vec) {
+goog.vec.Mat3.getRow = function(mat, row, vec) {
   vec[0] = mat[row];
   vec[1] = mat[row + 3];
   vec[2] = mat[row + 6];
@@ -379,43 +376,40 @@ goog.vec.Matrix3.getRow = function(mat, row, vec) {
 /**
  * Sets the rows of the matrix from the supplied vectors.
  *
- * @param {goog.vec.ArrayType} mat The matrix to receive the
- *     values.
- * @param {goog.vec.ArrayType} vec0 The values for row 0.
- * @param {goog.vec.ArrayType} vec1 The values for row 1.
- * @param {goog.vec.ArrayType} vec2 The values for row 2.
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix to receive the values.
+ * @param {goog.vec.Vec3.Vec3Like} vec0 The values for row 0.
+ * @param {goog.vec.Vec3.Vec3Like} vec1 The values for row 1.
+ * @param {goog.vec.Vec3.Vec3Like} vec2 The values for row 2.
  */
-goog.vec.Matrix3.setRows = function(
-    mat, vec0, vec1, vec2) {
-  goog.vec.Matrix3.setRow(mat, 0, vec0);
-  goog.vec.Matrix3.setRow(mat, 1, vec1);
-  goog.vec.Matrix3.setRow(mat, 2, vec2);
+goog.vec.Mat3.setRows = function(mat, vec0, vec1, vec2) {
+  goog.vec.Mat3.setRow(mat, 0, vec0);
+  goog.vec.Mat3.setRow(mat, 1, vec1);
+  goog.vec.Mat3.setRow(mat, 2, vec2);
 };
 
 
 /**
  * Retrieves the rows of the matrix into the supplied vectors.
  *
- * @param {goog.vec.ArrayType} mat The matrix to supplying
- *     the values.
- * @param {goog.vec.ArrayType} vec0 The vector to receive row 0.
- * @param {goog.vec.ArrayType} vec1 The vector to receive row 1.
- * @param {goog.vec.ArrayType} vec2 The vector to receive row 2.
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix to supplying the values.
+ * @param {goog.vec.Vec3.Vec3Like} vec0 The vector to receive row 0.
+ * @param {goog.vec.Vec3.Vec3Like} vec1 The vector to receive row 1.
+ * @param {goog.vec.Vec3.Vec3Like} vec2 The vector to receive row 2.
  */
-goog.vec.Matrix3.getRows = function(
-    mat, vec0, vec1, vec2) {
-  goog.vec.Matrix3.getRow(mat, 0, vec0);
-  goog.vec.Matrix3.getRow(mat, 1, vec1);
-  goog.vec.Matrix3.getRow(mat, 2, vec2);
+goog.vec.Mat3.getRows = function(mat, vec0, vec1, vec2) {
+  goog.vec.Mat3.getRow(mat, 0, vec0);
+  goog.vec.Mat3.getRow(mat, 1, vec1);
+  goog.vec.Mat3.getRow(mat, 2, vec2);
 };
 
 
 /**
- * Clears the given matrix to zero.
+ * Makes the given 3x3 matrix the zero matrix.
  *
- * @param {goog.vec.ArrayType} mat The matrix to clear.
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix.
+ * @return {!goog.vec.Mat3.Mat3Like} return mat so operations can be chained.
  */
-goog.vec.Matrix3.setZero = function(mat) {
+goog.vec.Mat3.makeZero = function(mat) {
   mat[0] = 0;
   mat[1] = 0;
   mat[2] = 0;
@@ -425,15 +419,17 @@ goog.vec.Matrix3.setZero = function(mat) {
   mat[6] = 0;
   mat[7] = 0;
   mat[8] = 0;
+  return mat;
 };
 
 
 /**
- * Sets the given matrix to the identity matrix.
+ * Makes the given 3x3 matrix the identity matrix.
  *
- * @param {goog.vec.ArrayType} mat The matrix to set.
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix.
+ * @return {!goog.vec.Mat3.Mat3Like} return mat so operations can be chained.
  */
-goog.vec.Matrix3.setIdentity = function(mat) {
+goog.vec.Mat3.makeIdentity = function(mat) {
   mat[0] = 1;
   mat[1] = 0;
   mat[2] = 0;
@@ -443,6 +439,7 @@ goog.vec.Matrix3.setIdentity = function(mat) {
   mat[6] = 0;
   mat[7] = 0;
   mat[8] = 1;
+  return mat;
 };
 
 
@@ -450,14 +447,14 @@ goog.vec.Matrix3.setIdentity = function(mat) {
  * Performs a per-component addition of the matrices mat0 and mat1, storing
  * the result into resultMat.
  *
- * @param {goog.vec.ArrayType} mat0 The first addend.
- * @param {goog.vec.ArrayType} mat1 The second addend.
- * @param {goog.vec.ArrayType} resultMat The matrix to
+ * @param {goog.vec.Mat3.Mat3Like} mat0 The first addend.
+ * @param {goog.vec.Mat3.Mat3Like} mat1 The second addend.
+ * @param {goog.vec.Mat3.Mat3Like} resultMat The matrix to
  *     receive the results (may be either mat0 or mat1).
- * @return {goog.vec.ArrayType} return resultMat so that operations can be
+ * @return {!goog.vec.Mat3.Mat3Like} return resultMat so that operations can be
  *     chained together.
  */
-goog.vec.Matrix3.add = function(mat0, mat1, resultMat) {
+goog.vec.Mat3.addMat = function(mat0, mat1, resultMat) {
   resultMat[0] = mat0[0] + mat1[0];
   resultMat[1] = mat0[1] + mat1[1];
   resultMat[2] = mat0[2] + mat1[2];
@@ -475,14 +472,14 @@ goog.vec.Matrix3.add = function(mat0, mat1, resultMat) {
  * Performs a per-component subtraction of the matrices mat0 and mat1,
  * storing the result into resultMat.
  *
- * @param {goog.vec.ArrayType} mat0 The minuend.
- * @param {goog.vec.ArrayType} mat1 The subtrahend.
- * @param {goog.vec.ArrayType} resultMat The matrix to receive
+ * @param {goog.vec.Mat3.Mat3Like} mat0 The minuend.
+ * @param {goog.vec.Mat3.Mat3Like} mat1 The subtrahend.
+ * @param {goog.vec.Mat3.Mat3Like} resultMat The matrix to receive
  *     the results (may be either mat0 or mat1).
- * @return {goog.vec.ArrayType} return resultMat so that operations can be
+ * @return {!goog.vec.Mat3.Mat3Like} return resultMat so that operations can be
  *     chained together.
  */
-goog.vec.Matrix3.subtract = function(mat0, mat1, resultMat) {
+goog.vec.Mat3.subMat = function(mat0, mat1, resultMat) {
   resultMat[0] = mat0[0] - mat1[0];
   resultMat[1] = mat0[1] - mat1[1];
   resultMat[2] = mat0[2] - mat1[2];
@@ -497,26 +494,26 @@ goog.vec.Matrix3.subtract = function(mat0, mat1, resultMat) {
 
 
 /**
- * Performs a component-wise multiplication of mat0 with the given scalar
- * storing the result into resultMat.
+ * Multiplies matrix mat0 with the given scalar, storing the result
+ * into resultMat.
  *
- * @param {goog.vec.ArrayType} mat0 The matrix to scale.
- * @param {number} scalar The scalar value to multiple to each element of mat0.
- * @param {goog.vec.ArrayType} resultMat The matrix to receive
- *     the results (may be mat0).
- * @return {goog.vec.ArrayType} return resultMat so that operations can be
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix.
+ * @param {number} scalar The scalar value to multiple to each element of mat.
+ * @param {goog.vec.Mat3.Mat3Like} resultMat The matrix to receive
+ *     the results (may be mat).
+ * @return {!goog.vec.Mat3.Mat3Like} return resultMat so that operations can be
  *     chained together.
  */
-goog.vec.Matrix3.scale = function(mat0, scalar, resultMat) {
-  resultMat[0] = mat0[0] * scalar;
-  resultMat[1] = mat0[1] * scalar;
-  resultMat[2] = mat0[2] * scalar;
-  resultMat[3] = mat0[3] * scalar;
-  resultMat[4] = mat0[4] * scalar;
-  resultMat[5] = mat0[5] * scalar;
-  resultMat[6] = mat0[6] * scalar;
-  resultMat[7] = mat0[7] * scalar;
-  resultMat[8] = mat0[8] * scalar;
+goog.vec.Mat3.multScalar = function(mat, scalar, resultMat) {
+  resultMat[0] = mat[0] * scalar;
+  resultMat[1] = mat[1] * scalar;
+  resultMat[2] = mat[2] * scalar;
+  resultMat[3] = mat[3] * scalar;
+  resultMat[4] = mat[4] * scalar;
+  resultMat[5] = mat[5] * scalar;
+  resultMat[6] = mat[6] * scalar;
+  resultMat[7] = mat[7] * scalar;
+  resultMat[8] = mat[8] * scalar;
   return resultMat;
 };
 
@@ -525,15 +522,14 @@ goog.vec.Matrix3.scale = function(mat0, scalar, resultMat) {
  * Multiplies the two matrices mat0 and mat1 using matrix multiplication,
  * storing the result into resultMat.
  *
- * @param {goog.vec.ArrayType} mat0 The first (left hand) matrix.
- * @param {goog.vec.ArrayType} mat1 The second (right hand)
- *     matrix.
- * @param {goog.vec.ArrayType} resultMat The matrix to receive
+ * @param {goog.vec.Mat3.Mat3Like} mat0 The first (left hand) matrix.
+ * @param {goog.vec.Mat3.Mat3Like} mat1 The second (right hand) matrix.
+ * @param {goog.vec.Mat3.Mat3Like} resultMat The matrix to receive
  *     the results (may be either mat0 or mat1).
- * @return {goog.vec.ArrayType} return resultMat so that operations can be
+ * @return {!goog.vec.Mat3.Mat3Like} return resultMat so that operations can be
  *     chained together.
  */
-goog.vec.Matrix3.multMat = function(mat0, mat1, resultMat) {
+goog.vec.Mat3.multMat = function(mat0, mat1, resultMat) {
   var a00 = mat0[0], a10 = mat0[1], a20 = mat0[2];
   var a01 = mat0[3], a11 = mat0[4], a21 = mat0[5];
   var a02 = mat0[6], a12 = mat0[7], a22 = mat0[8];
@@ -557,13 +553,14 @@ goog.vec.Matrix3.multMat = function(mat0, mat1, resultMat) {
 
 /**
  * Transposes the given matrix mat storing the result into resultMat.
- * @param {goog.vec.ArrayType} mat The matrix to transpose.
- * @param {goog.vec.ArrayType} resultMat The matrix to receive
+ *
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix to transpose.
+ * @param {goog.vec.Mat3.Mat3Like} resultMat The matrix to receive
  *     the results (may be mat).
- * @return {goog.vec.ArrayType} return resultMat so that operations can be
+ * @return {!goog.vec.Mat3.Mat3Like} return resultMat so that operations can be
  *     chained together.
  */
-goog.vec.Matrix3.transpose = function(mat, resultMat) {
+goog.vec.Mat3.transpose = function(mat, resultMat) {
   if (resultMat == mat) {
     var a10 = mat[1], a20 = mat[2], a21 = mat[5];
     resultMat[1] = mat[3];
@@ -590,13 +587,14 @@ goog.vec.Matrix3.transpose = function(mat, resultMat) {
 /**
  * Computes the inverse of mat0 storing the result into resultMat. If the
  * inverse is defined, this function returns true, false otherwise.
- * @param {goog.vec.ArrayType} mat0 The matrix to invert.
- * @param {goog.vec.ArrayType} resultMat The matrix to receive
+ *
+ * @param {goog.vec.Mat3.Mat3Like} mat0 The matrix to invert.
+ * @param {goog.vec.Mat3.Mat3Like} resultMat The matrix to receive
  *     the result (may be mat0).
  * @return {boolean} True if the inverse is defined. If false is returned,
  *     resultMat is not modified.
  */
-goog.vec.Matrix3.invert = function(mat0, resultMat) {
+goog.vec.Mat3.invert = function(mat0, resultMat) {
   var a00 = mat0[0], a10 = mat0[1], a20 = mat0[2];
   var a01 = mat0[3], a11 = mat0[4], a21 = mat0[5];
   var a02 = mat0[6], a12 = mat0[7], a22 = mat0[8];
@@ -628,11 +626,11 @@ goog.vec.Matrix3.invert = function(mat0, resultMat) {
 /**
  * Returns true if the components of mat0 are equal to the components of mat1.
  *
- * @param {goog.vec.ArrayType} mat0 The first matrix.
- * @param {goog.vec.ArrayType} mat1 The second matrix.
+ * @param {goog.vec.Mat3.Mat3Like} mat0 The first matrix.
+ * @param {goog.vec.Mat3.Mat3Like} mat1 The second matrix.
  * @return {boolean} True if the the two matrices are equivalent.
  */
-goog.vec.Matrix3.equals = function(mat0, mat1) {
+goog.vec.Mat3.equals = function(mat0, mat1) {
   return mat0.length == mat1.length &&
       mat0[0] == mat1[0] && mat0[1] == mat1[1] && mat0[2] == mat1[2] &&
       mat0[3] == mat1[3] && mat0[4] == mat1[4] && mat0[5] == mat1[5] &&
@@ -644,15 +642,14 @@ goog.vec.Matrix3.equals = function(mat0, mat1) {
  * Transforms the given vector with the given matrix storing the resulting,
  * transformed matrix into resultVec.
  *
- * @param {goog.vec.ArrayType} mat The matrix supplying the
- *     transformation.
- * @param {goog.vec.ArrayType} vec The vector to transform.
- * @param {goog.vec.ArrayType} resultVec The vector to
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix supplying the transformation.
+ * @param {goog.vec.Vec3.Vec3Like} vec The vector to transform.
+ * @param {goog.vec.Vec3.Vec3Like} resultVec The vector to
  *     receive the results (may be vec).
- * @return {goog.vec.ArrayType} return resultVec so that operations can be
+ * @return {!goog.vec.Vec3.Vec3Like} return resultVec so that operations can be
  *     chained together.
  */
-goog.vec.Matrix3.multVec3 = function(mat, vec, resultVec) {
+goog.vec.Mat3.multVec3 = function(mat, vec, resultVec) {
   var x = vec[0], y = vec[1], z = vec[2];
   resultVec[0] = x * mat[0] + y * mat[3] + z * mat[6];
   resultVec[1] = x * mat[1] + y * mat[4] + z * mat[7];
@@ -662,52 +659,58 @@ goog.vec.Matrix3.multVec3 = function(mat, vec, resultVec) {
 
 
 /**
- * Initializes the given 3x3 matrix as a translation matrix with x and y
+ * Makes the given 3x3 matrix a translation matrix with x and y
  * translation values.
  *
- * @param {goog.vec.ArrayType} mat The 3x3 (9-element) matrix
- *     array to receive the new translation matrix.
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix.
  * @param {number} x The translation along the x axis.
  * @param {number} y The translation along the y axis.
+ * @return {!goog.vec.Mat3.Mat3Like} return mat so that operations can be
+ *     chained.
  */
-goog.vec.Matrix3.makeTranslate = function(mat, x, y) {
-  goog.vec.Matrix3.setIdentity(mat);
-  goog.vec.Matrix3.setColumnValues(mat, 2, x, y, 1);
+goog.vec.Mat3.makeTranslate = function(mat, x, y) {
+  goog.vec.Mat3.makeIdentity(mat);
+  goog.vec.Mat3.setColumnValues(mat, 2, x, y, 1);
+  return /** @type {!goog.vec.Mat3.Mat3Like} */ (mat);
 };
 
 
 /**
- * Initializes the given 3x3 matrix as a scale matrix with x, y and z scale
- * factors.
- * @param {goog.vec.ArrayType} mat The 3x3 (9-element) matrix
+ * Makes the given 3x3 matrix a scale matrix with x, y, and z scale factors.
+ *
+ * @param {goog.vec.Mat3.Mat3Like} mat The 3x3 (9-element) matrix
  *     array to receive the new scale matrix.
  * @param {number} x The scale along the x axis.
  * @param {number} y The scale along the y axis.
  * @param {number} z The scale along the z axis.
+ * @return {!goog.vec.Mat3.Mat3Like} return mat so that operations can be
+ *     chained.
  */
-goog.vec.Matrix3.makeScale = function(mat, x, y, z) {
-  goog.vec.Matrix3.setIdentity(mat);
-  goog.vec.Matrix3.setDiagonalValues(mat, x, y, z);
+goog.vec.Mat3.makeScale = function(mat, x, y, z) {
+  goog.vec.Mat3.makeIdentity(mat);
+  goog.vec.Mat3.setDiagonalValues(mat, x, y, z);
+  return /** @type {!goog.vec.Mat3.Mat3Like} */ (mat);
 };
 
 
 /**
- * Initializes the given 3x3 matrix as a rotation matrix with the given rotation
+ * Makes the given 3x3 matrix a rotation matrix with the given rotation
  * angle about the axis defined by the vector (ax, ay, az).
- * @param {goog.vec.ArrayType} mat The 3x3 (9-element) matrix
- *     array to receive the new scale matrix.
+ *
+ * @param {goog.vec.Mat3.Mat3Like} mat The matrix.
  * @param {number} angle The rotation angle in radians.
  * @param {number} ax The x component of the rotation axis.
  * @param {number} ay The y component of the rotation axis.
  * @param {number} az The z component of the rotation axis.
+ * @return {!goog.vec.Mat3.Mat3Like} return mat so that operations can be
+ *     chained.
  */
-goog.vec.Matrix3.makeAxisAngleRotate = function(
-    mat, angle, ax, ay, az) {
+goog.vec.Mat3.makeRotate = function(mat, angle, ax, ay, az) {
   var c = Math.cos(angle);
   var d = 1 - c;
   var s = Math.sin(angle);
 
-  goog.vec.Matrix3.setFromValues(mat,
+  goog.vec.Mat3.setFromValues(mat,
       ax * ax * d + c,
       ax * ay * d + az * s,
       ax * az * d - ay * s,
@@ -719,4 +722,5 @@ goog.vec.Matrix3.makeAxisAngleRotate = function(
       ax * az * d + ay * s,
       ay * az * d - ax * s,
       az * az * d + c);
+  return /** @type {!goog.vec.Mat3.Mat3Like} */ (mat);
 };
