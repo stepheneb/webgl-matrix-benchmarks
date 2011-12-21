@@ -1,6 +1,6 @@
 /* 
  * gl-matrix.js - High performance matrix and vector operations for WebGL
- * Version 1.0.1
+ * Version 1.2
  */
 
 /*
@@ -29,13 +29,28 @@
 "use strict";
 
 // Type declarations
-var MatrixArray = (typeof Float32Array !== 'undefined') ? Float32Array : Array, // Fallback for systems that don't support TypedArrays
-    glMatrixArrayType = MatrixArray, // For Backwards compatibility
-    vec3 = {},
-    mat3 = {},
-    mat4 = {},
-    quat4 = {};
+(function() {
+    // account for CommonJS environments
+    var _global = (typeof(exports) != 'undefined') ? global : window;
+    _global.glMatrixArrayType = _global.MatrixArray = null;
+    _global.vec3 = {};
+    _global.mat3 = {};
+    _global.mat4 = {};
+    _global.quat4 = {};
 
+    // explicitly sets and returns the type of array to use within glMatrix
+    _global.setMatrixArrayType = function(type) {
+        return glMatrixArrayType = MatrixArray = type;
+    };
+
+    // auto-detects and returns the best type of array to use within glMatrix, falling
+    // back to Array if typed arrays are unsupported
+    _global.determineMatrixArrayType = function() {
+        return setMatrixArrayType((typeof Float32Array !== 'undefined') ? Float32Array : Array);
+    };
+
+    determineMatrixArrayType();
+})();
 
 /*
  * vec3 - 3 Dimensional Vector
@@ -59,6 +74,8 @@ vec3.create = function (vec) {
         dest[0] = vec[0];
         dest[1] = vec[1];
         dest[2] = vec[2];
+    } else {
+        dest[0] = dest[1] = dest[2] = 0;
     }
 
     return dest;
@@ -326,6 +343,65 @@ vec3.lerp = function (vec, vec2, lerp, dest) {
     dest[1] = vec[1] + lerp * (vec2[1] - vec[1]);
     dest[2] = vec[2] + lerp * (vec2[2] - vec[2]);
 
+    return dest;
+};
+
+/*
+ * vec3.dist
+ * Calculates the euclidian distance between two vec3
+ *
+ * Params:
+ * vec - vec3, first vector
+ * vec2 - vec3, second vector
+ *
+ * Returns:
+ * distance between vec and vec2
+ */
+vec3.dist = function (vec, vec2) {
+    var x = vec2[0] - vec[0],
+        y = vec2[1] - vec[1],
+        z = vec2[2] - vec[2];
+        
+    return Math.sqrt(x*x + y*y + z*z);
+};
+
+/*
+ * vec3.unproject
+ * Projects the specified vec3 from screen space into object space
+ * Based on Mesa gluUnProject implementation at: 
+ * http://webcvs.freedesktop.org/mesa/Mesa/src/glu/mesa/project.c?revision=1.4&view=markup
+ *
+ * Params:
+ * vec - vec3, screen-space vector to project
+ * modelView - mat4, Model-View matrix
+ * proj - mat4, Projection matrix
+ * viewport - vec4, Viewport as given to gl.viewport [x, y, width, height]
+ * dest - Optional, vec3 receiving unprojected result. If not specified result is written to vec
+ *
+ * Returns:
+ * dest if specified, vec otherwise
+ */
+vec3.unproject = function (vec, modelView, proj, viewport, dest) {
+    if (!dest) { dest = vec; }
+
+    var m = mat4.create();
+    var v = new MatrixArray(4);
+    
+    v[0] = (vec[0] - viewport[0]) * 2.0 / viewport[2] - 1.0;
+    v[1] = (vec[1] - viewport[1]) * 2.0 / viewport[3] - 1.0;
+    v[2] = 2.0 * vec[2] - 1.0;
+    v[3] = 1.0;
+    
+    mat4.multiply(proj, modelView, m);
+    if(!mat4.inverse(m)) { return null; }
+    
+    mat4.multiplyVec4(m, v);
+    if(v[3] === 0.0) { return null; }
+
+    dest[0] = v[0] / v[3];
+    dest[1] = v[1] / v[3];
+    dest[2] = v[2] / v[3];
+    
     return dest;
 };
 
@@ -703,7 +779,7 @@ mat4.determinant = function (mat) {
  * dest - Optional, mat4 receiving inverse matrix. If not specified result is written to mat
  *
  * Returns:
- * dest is specified, mat otherwise
+ * dest is specified, mat otherwise, null if matrix cannot be inverted
  */
 mat4.inverse = function (mat, dest) {
     if (!dest) { dest = mat; }
@@ -727,8 +803,12 @@ mat4.inverse = function (mat, dest) {
         b10 = a21 * a33 - a23 * a31,
         b11 = a22 * a33 - a23 * a32,
 
-        // Calculate the determinant (inlined to avoid double-caching)
-        invDet = 1 / (b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06);
+        d = (b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06),
+        invDet;
+
+        // Calculate the determinant
+        if (!d) { return null; }
+        invDet = 1 / d;
 
     dest[0] = (a11 * b11 - a12 * b10 + a13 * b09) * invDet;
     dest[1] = (-a01 * b11 + a02 * b10 - a03 * b09) * invDet;
@@ -821,7 +901,7 @@ mat4.toMat3 = function (mat, dest) {
  * dest - Optional, mat3 receiving values
  *
  * Returns:
- * dest is specified, a new mat3 otherwise
+ * dest is specified, a new mat3 otherwise, null if the matrix cannot be inverted
  */
 mat4.toInverseMat3 = function (mat, dest) {
     // Cache the matrix values (makes for huge speed increases!)
