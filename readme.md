@@ -11,7 +11,7 @@ This work is based on Brandon's work as of this commit:
 
 Comparing these matrix libraries:
 
-* [glMatrix](http://code.google.com/p/glmatrix), [New BSD license](http://www.opensource.org/licenses/bsd-license.php)
+* [glMatrix](http://code.google.com/p/glmatrix), [zlib license](http://www.opensource.org/licenses/Zlib)
 * [mjs](http://code.google.com/p/webgl-mjs), [MIT license](http://www.opensource.org/licenses/mit-license.php)
 * CanvasMatrix
 * [EWGL_math](http://code.google.com/p/ewgl-matrices), [New BSD license](http://www.opensource.org/licenses/bsd-license.php)
