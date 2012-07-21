@@ -163,7 +163,7 @@ var tests = (function () {
 
         'Vector Transformation': {
             test: null // Sylvester has no dedicated function for transforming
-                       // 3 dimensional vectors with 4x4 matrices
+                       // 3 dimensional vectors with 4x4 matrices.
         }
     };
 }());
