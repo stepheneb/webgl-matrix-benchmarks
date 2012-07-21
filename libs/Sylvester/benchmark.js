@@ -1,3 +1,5 @@
+// Sylvester benchmark
+
 /*jslint browser: true, maxerr: 50, maxlen: 79, nomen: true, sloppy: true,
   unparam: true */
 
@@ -7,8 +9,8 @@
 window.onload = TestHelper.main;
 
 var tests = (function () {
-    // Matrix that 1. rotates by a random angle about a random axis and 2.
-    // translates by a random vector.
+    // Matrix that 1. translates by a random vector and 2. rotates by a random
+    // angle about a random axis.
     function randomMatrix() {
         var randomAxis = $V([pseudoRandom(), pseudoRandom(), pseudoRandom()]).
             toUnitVector(),
